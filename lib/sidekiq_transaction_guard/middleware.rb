@@ -10,7 +10,8 @@ module SidekiqTransactionGuard
   # `SidekiqTransactionGuard.notify` respectively.
   class Middleware
     def call(worker_class, job, queue, redis_pool)
-      log_transaction(worker_class.constantize) if in_transaction?
+      # Check if we need to log this. Also, convert worker_class to its actual class
+      log_transaction(worker_class.constantize, job) if in_transaction?
 
       yield
     end
@@ -56,7 +57,7 @@ module SidekiqTransactionGuard
       end
     end
 
-    def log_transaction
+    def log_transaction(worker_class, job)
       mode = worker_mode(worker_class)
       if mode != :disabled
         message = "#{worker_class.name} was called from inside a database transaction"
