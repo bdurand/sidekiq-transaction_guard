@@ -1,3 +1,5 @@
+# SidekiqTransactionGuard
+
 You should never call a Sidekiq worker that relies on the state of the database from within a database transaction. You will end up with a race condition since the worker could kick off before the transaction is actually written to the database. This gem can be used to highlight where your code may be scheduling workers in an indeterminate state.
 
 ## The Problem
@@ -63,7 +65,7 @@ end
 
 ### Mode
 
-By default, the behavior will be to just log that a worker is being scheduled inside of a transaction to the Sidekiq.logger. If you are running a test suite, you may want to expose the problematic calls by either raising errors or logging the calls to standard error. The mode can be one of `[:warn, :stderr, :error, :allowed]`.
+By default, the behavior is to log that a worker is being scheduled inside of a transaction to the `Sidekiq.logger`. If you are running a test suite, you may want to expose the problematic calls by either raising errors or logging the calls to standard error. The mode can be one of `[:warn, :stderr, :error, :allowed]`.
 
 ```ruby
 # Raise errors
@@ -90,7 +92,7 @@ end
 ```
 
 
-You can use the `:off` mode to allow individual worker classes to be scheduled inside of transactions where the worker logic doesn't care about the state of the database. For instance, if you use a Sidekiq woker to report errors, you would want to all it inside of transactions. If you don't control the worker you want to change the mode on, you simply call this in an initializer:
+You can use the `:off` mode to allow individual worker classes to be scheduled inside of transactions where the worker logic doesn't care about the state of the database. For instance, if you use a Sidekiq worker to report errors, you would want to all it inside of transactions. If you don't control the worker you want to change the mode on, you simply call this in an initializer:
 
 ```ruby
 SomeWorker.sidekiq_options.merge(in_transaction_mode: :allowed)
