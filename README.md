@@ -145,7 +145,7 @@ The class is used to get to the connection pool used for the class. You only nee
 If you're using transaction fixtures in your tests, there will always be a database transaction open. If you're using [DatabaseCleaner](https://github.com/DatabaseCleaner/database_cleaner) in your tests, you just need to include this snippet in your test suite initializer:
 
 ```ruby
-sidekiq_transaction_guard/database_cleaner
+require 'sidekiq_transaction_guard/database_cleaner'
 ```
 
 This will add the appropriate code so that the surrounding transaction in the test suite is ignored (i.e. workers will only warn/error if there is more than one open transaction).
