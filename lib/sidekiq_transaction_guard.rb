@@ -42,7 +42,7 @@ module SidekiqTransactionGuard
 
     # Return the block set as the notify handler with a call to `notify`.
     def notify_block
-      @notify
+      @notify ||= nil
     end
 
     # Add a class that maintains it's own connection pool to the connections
@@ -95,8 +95,14 @@ module SidekiqTransactionGuard
       allowed_transaction_count = connection_counts[connection_class.name] || 0
     end
   end
-
-  self.mode = (ENV["RAILS_ENV"] == "test" || ENV["RACK_ENV"] == "test" ? :stderr : :warn)
-  self.add_connection_class(::ActiveRecord::Base)
-  @notify = nil
 end
+
+# Configure the default transaction guard mode
+if ENV["RAILS_ENV"] == "test" || ENV["RACK_ENV"] == "test"
+  SidekiqTransactionGuard.mode = :stderr
+else
+  SidekiqTransactionGuard.mode = :warn
+end
+
+# Add the ActiveRecord::Base connection class by default
+SidekiqTransactionGuard.add_connection_class(::ActiveRecord::Base)
