@@ -2,9 +2,9 @@
 
 require 'sidekiq'
 require 'set'
-require 'active_record/base'
+require 'active_record'
 
-require_relative 'sidekiq_transaction_guard/middleware'
+require 'sidekiq_transaction_guard/middleware'
 
 module SidekiqTransactionGuard
   class InsideTransactionError < StandardError
@@ -32,14 +32,14 @@ module SidekiqTransactionGuard
     def mode
       @mode
     end
-    
+
     # Define the global notify block. This block will be called with a Sidekiq
     # job hash for all jobs enqueued inside transactions if the mode is `:warn`
     # or `:stderr`.
     def notify(&block)
       @notify = block
     end
-    
+
     # Return the block set as the notify handler with a call to `notify`.
     def notify_block
       @notify
@@ -88,7 +88,7 @@ module SidekiqTransactionGuard
     end
 
     private
-    
+
     def allowed_transaction_level(connection_class)
       connection_counts = Thread.current[:sidekiq_rails_transaction_guard]
       return 0 unless connection_counts

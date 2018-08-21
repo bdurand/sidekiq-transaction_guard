@@ -3,7 +3,6 @@ PATH
   specs:
     sidekiq-transaction-guard (1.0.0)
       activerecord (>= 4.0)
-      activesupport (>= 4.0)
       sidekiq (>= 3.0)
 
 GEM
