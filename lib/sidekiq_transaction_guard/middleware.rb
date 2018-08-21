@@ -5,36 +5,20 @@ module SidekiqTransactionGuard
   # a database transaction.
   #
   # This middleware can read `sidekiq_options` set on the worker for
-  # `:in_transaction_mode` and `:notify_in_transaction` which will override
+  # `:transaction_guard` and `:notify_in_transaction` which will override
   # the default behavior set in `SidekiqTransactionGuard.mode` and
   # `SidekiqTransactionGuard.notify` respectively.
   class Middleware
     def call(worker_class, job, queue, redis_pool)
-      worker_class = worker_class.constantize
-      if in_transaction?
-        mode = worker_mode(worker_class)
-        if mode != :allowed
-          message = "#{worker_class.name} was called from inside a database transaction"
-          if mode == :error
-            raise SidekiqTransactionGuard::InsideTransactionError.new(message)
-          else
-            logger = Sidekiq.logger unless mode == :stderr
-            if logger
-              logger.warn(message)
-            else
-              $stderr.write("WARNING #{message}\n")
-            end
-            notify!(worker_class, job)
-          end
-        end
-      end
+      log_transaction(worker_class.constantize) if in_transaction?
+
       yield
     end
 
     private
 
     def worker_mode(worker_class)
-      read_sidekiq_option(worker_class, :in_transaction_mode) || SidekiqTransactionGuard.mode
+      read_sidekiq_option(worker_class, :transaction_guard) || SidekiqTransactionGuard.mode
     end
 
     def in_transaction?
@@ -68,6 +52,24 @@ module SidekiqTransactionGuard
           else
             $stderr.write("ERROR on SidekiqTransactionGuard notify block for #{worker_class}: #{e.inspect}\n")
           end
+        end
+      end
+    end
+
+    def log_transaction
+      mode = worker_mode(worker_class)
+      if mode != :disabled
+        message = "#{worker_class.name} was called from inside a database transaction"
+        if mode == :error
+          raise SidekiqTransactionGuard::InsideTransactionError.new(message)
+        else
+          logger = Sidekiq.logger unless mode == :stderr
+          if logger
+            logger.warn(message)
+          else
+            $stderr.write("WARNING #{message}\n")
+          end
+          notify!(worker_class, job)
         end
       end
     end
