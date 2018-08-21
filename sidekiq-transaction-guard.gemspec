@@ -3,22 +3,23 @@ lib = File.expand_path('../lib', __FILE__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 
 Gem::Specification.new do |spec|
-  spec.name          = "sidekiq_"
+  spec.name          = "sidekiq-transaction-guard"
   spec.version       = File.read(File.expand_path("../VERSION", __FILE__)).chomp
-  spec.authors       = ["Brian Durand"]
-  spec.email         = ["bbdurand@gmail.com"]
+  spec.authors       = ["Brian Durand", "Winston Durand"]
+  spec.email         = ["bbdurand@gmail.com", "me@winstondurand.com"]
   spec.summary       = "Protect from accidentally invoking Sidekiq jobs when there are open database transactions"
   spec.description   = "Protect from accidentally invoking Sidekiq jobs when there are open database transactions which could result in race conditions."
-  spec.homepage      = "https://github.com/bdurand/sidekiq_transaction_guard"
+  spec.homepage      = "https://github.com/bdurand/sidekiq-transaction-guard"
   spec.license       = "MIT"
   spec.files         = `git ls-files`.split($/)
   spec.executables   = spec.files.grep(%r{^bin/}) { |f| File.basename(f) }
   spec.test_files    = spec.files.grep(%r{^(test|spec|features)/})
   spec.require_paths = ["lib"]
 
-  spec.required_ruby_version = '>=2.0'
+  spec.required_ruby_version = '>= 2.0'
 
   spec.add_dependency "activerecord", ">= 4.0"
+  spec.add_dependency "activesupport", ">= 4.0"
   spec.add_dependency "sidekiq", ">= 3.0"
 
   spec.add_development_dependency "bundler", "~> 1.3"
