@@ -2,6 +2,7 @@
 
 require 'sidekiq'
 require 'set'
+require 'thread'
 require 'active_record/base'
 
 require_relative 'sidekiq_transaction_guard/middleware'
@@ -9,6 +10,8 @@ require_relative 'sidekiq_transaction_guard/middleware'
 module SidekiqTransactionGuard
   class InsideTransactionError < StandardError
   end
+
+  @lock = Mutex.new
 
   class << self
     VALID_MODES = [:warn, :stderr, :error, :allowed].freeze
@@ -32,14 +35,14 @@ module SidekiqTransactionGuard
     def mode
       @mode
     end
-    
+
     # Define the global notify block. This block will be called with a Sidekiq
     # job hash for all jobs enqueued inside transactions if the mode is `:warn`
     # or `:stderr`.
     def notify(&block)
       @notify = block
     end
-    
+
     # Return the block set as the notify handler with a call to `notify`.
     def notify_block
       @notify
@@ -56,9 +59,15 @@ module SidekiqTransactionGuard
 
     # Return true if any connection is currently inside of a transaction.
     def in_transaction?
-      @connection_classes.any? do |connection_class|
-        connection = connection_class.connection
-        connection.open_transactions > allowed_transaction_level(connection_class)
+      connection_classes = @lock.synchronize{ @connection_classes.dup }
+      connection_classes.any? do |connection_class|
+        connection_pool = connection_class.connection_pool
+        connection = connection_class.connection if connection_pool.active_connection?
+        if connection
+          connection.open_transactions > allowed_transaction_level(connection_class)
+        else
+          false
+        end
       end
     end
 
@@ -88,7 +97,7 @@ module SidekiqTransactionGuard
     end
 
     private
-    
+
     def allowed_transaction_level(connection_class)
       connection_counts = Thread.current[:sidekiq_rails_transaction_guard]
       return 0 unless connection_counts
