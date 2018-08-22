@@ -3,7 +3,7 @@
 require 'sidekiq'
 require 'set'
 require 'thread'
-require 'active_record/base'
+require 'active_record'
 
 require_relative 'sidekiq_transaction_guard/middleware'
 
@@ -14,15 +14,15 @@ module SidekiqTransactionGuard
   @lock = Mutex.new
 
   class << self
-    VALID_MODES = [:warn, :stderr, :error, :allowed].freeze
+    VALID_MODES = [:warn, :stderr, :error, :disabled].freeze
 
-    # Set the global mode to one of `[:warn, :stderr, :error, :allowed]`. The
+    # Set the global mode to one of `[:warn, :stderr, :error, :disabled]`. The
     # default mode is `:warn`. This controls the behavior of workers enqueued
     # inside of transactions.
     # * :warn - Log to Sidekiq.logger
-    # * :stderr - Log to STDOUT
+    # * :stderr - Log to $stderr
     # * :error - Throw a `SidekiqTransactionGuard::InsideTransactionError`
-    # * :allowed - Allow workers inside of transactions
+    # * :disabled - Allow workers inside of transactions
     def mode=(symbol)
       if VALID_MODES.include?(symbol)
         @mode = symbol
@@ -45,7 +45,7 @@ module SidekiqTransactionGuard
 
     # Return the block set as the notify handler with a call to `notify`.
     def notify_block
-      @notify
+      @notify ||= nil
     end
 
     # Add a class that maintains it's own connection pool to the connections
@@ -100,12 +100,17 @@ module SidekiqTransactionGuard
 
     def allowed_transaction_level(connection_class)
       connection_counts = Thread.current[:sidekiq_rails_transaction_guard]
-      return 0 unless connection_counts
-      allowed_transaction_count = connection_counts[connection_class.name] || 0
+      (connection_counts && connection_counts[connection_class.name]) || 0
     end
   end
-
-  self.mode = (ENV["RAILS_ENV"] == "test" || ENV["RACK_ENV"] == "test" ? :stderr : :warn)
-  self.add_connection_class(::ActiveRecord::Base)
-  @notify = nil
 end
+
+# Configure the default transaction guard mode
+if ENV["RAILS_ENV"] == "test" || ENV["RACK_ENV"] == "test"
+  SidekiqTransactionGuard.mode = :stderr
+else
+  SidekiqTransactionGuard.mode = :warn
+end
+
+# Add the ActiveRecord::Base connection class by default
+SidekiqTransactionGuard.add_connection_class(::ActiveRecord::Base)

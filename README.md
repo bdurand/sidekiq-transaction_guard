@@ -1,3 +1,5 @@
+# SidekiqTransactionGuard
+
 You should never call a Sidekiq worker that relies on the state of the database from within a database transaction. You will end up with a race condition since the worker could kick off before the transaction is actually written to the database. This gem can be used to highlight where your code may be scheduling workers in an indeterminate state.
 
 ## The Problem
@@ -54,6 +56,8 @@ end
 You can use this gem to add Sidekiq client middleware that will either warn you or raise an error when workers are scheduled inside of a database transaction. You can do this by simply adding this to your application's initialization code:
 
 ```ruby
+require 'sidekiq-transaction-guard'
+
 Sidekiq.configure_client do |config|
   config.client_middleware do |chain|
     chain.add(SidekiqTransactionGuard::Middleware)
@@ -63,7 +67,7 @@ end
 
 ### Mode
 
-By default, the behavior will be to just log that a worker is being scheduled inside of a transaction to the Sidekiq.logger. If you are running a test suite, you may want to expose the problematic calls by either raising errors or logging the calls to standard error. The mode can be one of `[:warn, :stderr, :error, :allowed]`.
+By default, the behavior is to log that a worker is being scheduled inside of a transaction to the `Sidekiq.logger`. If you are running a test suite, you may want to expose the problematic calls by either raising errors or logging the calls to standard error. The mode can be one of `[:warn, :stderr, :error, :disabled]`.
 
 ```ruby
 # Raise errors
@@ -76,24 +80,24 @@ SidekiqTransactionGuard.mode = :stderr
 SidekiqTransactionGuard.mode = :warn
 
 # Disable entirely
-SidekiqTransactionGuard.mode = :allowed
+SidekiqTransactionGuard.mode = :disabled
 ```
 
-You can also set the mode on individual worker classes with `sidekiq_options in_transaction_mode: mode`.
+You can also set the mode on individual worker classes with `sidekiq_options transaction_guard: mode`.
 
 ```ruby
 class SomeWorker
   include Sidekiq::Worker
 
-  sidekiq_options in_transaction_mode: :error
+  sidekiq_options transaction_guard: :error
 end
 ```
 
 
-You can use the `:off` mode to allow individual worker classes to be scheduled inside of transactions where the worker logic doesn't care about the state of the database. For instance, if you use a Sidekiq woker to report errors, you would want to all it inside of transactions. If you don't control the worker you want to change the mode on, you simply call this in an initializer:
+You can use the `:disabled` mode to allow individual worker classes to be scheduled inside of transactions where the worker logic doesn't care about the state of the database. For instance, if you use a Sidekiq worker to report errors, you would want to all it inside of transactions. If you don't control the worker you want to change the mode on, you simply call this in an initializer:
 
 ```ruby
-SomeWorker.sidekiq_options.merge(in_transaction_mode: :allowed)
+SomeWorker.sidekiq_options.merge(transaction_guard: :disabled)
 ```
 
 You could
@@ -143,7 +147,7 @@ The class is used to get to the connection pool used for the class. You only nee
 If you're using transaction fixtures in your tests, there will always be a database transaction open. If you're using [DatabaseCleaner](https://github.com/DatabaseCleaner/database_cleaner) in your tests, you just need to include this snippet in your test suite initializer:
 
 ```ruby
-sidekiq_transaction_guard/database_cleaner
+require 'sidekiq_transaction_guard/database_cleaner'
 ```
 
 This will add the appropriate code so that the surrounding transaction in the test suite is ignored (i.e. workers will only warn/error if there is more than one open transaction).

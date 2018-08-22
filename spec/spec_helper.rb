@@ -1,17 +1,14 @@
-require 'rspec'
+require "bundler/setup"
+require "sidekiq-transaction-guard"
 
-if ENV['ACTIVE_RECORD_VERSION']
-  gem 'activesupport', ENV['ACTIVE_RECORD_VERSION']
-  gem 'activerecord', ENV['ACTIVE_RECORD_VERSION']
+RSpec.configure do |config|
+  # Enable flags like --only-failures and --next-failure
+  config.example_status_persistence_file_path = ".rspec_status"
+
+  config.expect_with :rspec do |c|
+    c.syntax = :expect
+  end
 end
-
-if ENV['SIDEKIQ_VERSION']
-  gem ENV['SIDEKIQ_VERSION']
-end
-
-require 'active_record'
-
-require_relative '../lib/sidekiq_transaction_guard'
 
 ActiveRecord::Base.establish_connection("adapter" => "sqlite3", "database" => ":memory:")
 

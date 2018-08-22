@@ -31,7 +31,7 @@ end
 class ErrorWorker
   include Sidekiq::Worker
 
-  sidekiq_options in_transaction_mode: :error
+  sidekiq_options transaction_guard: :error
 
   def perform
   end
@@ -40,7 +40,7 @@ end
 class InTransactionWorker
   include Sidekiq::Worker
 
-  sidekiq_options in_transaction_mode: :allowed
+  sidekiq_options transaction_guard: :disabled
 
   def perform
   end
