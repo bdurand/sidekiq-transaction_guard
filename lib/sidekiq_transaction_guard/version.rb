@@ -1,5 +1,5 @@
 # frozen_string_literal: true
 
 module SidekiqTransactionGuard
-  VERSION = "1.0.0"
+  VERSION = File.read(File.expand_path("../../VERSION", __FILE__), "r").chomp.freeze
 end
