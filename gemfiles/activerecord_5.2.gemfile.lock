@@ -1,5 +1,5 @@
 PATH
-  remote: .
+  remote: ..
   specs:
     sidekiq-transaction_guard (1.0.0)
       activerecord (>= 4.0)
@@ -63,6 +63,7 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
+  activerecord (~> 5.2.0)
   appraisal
   bundler (~> 1.10)
   database_cleaner
