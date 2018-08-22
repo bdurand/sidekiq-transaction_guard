@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    sidekiq-transaction-guard (1.0.0)
+    sidekiq-transaction_guard (1.0.0)
       activerecord (>= 4.0)
       sidekiq (>= 3.0)
 
@@ -62,7 +62,7 @@ DEPENDENCIES
   database_cleaner
   rake
   rspec (~> 3.0)
-  sidekiq-transaction-guard!
+  sidekiq-transaction_guard!
   sqlite3
 
 BUNDLED WITH

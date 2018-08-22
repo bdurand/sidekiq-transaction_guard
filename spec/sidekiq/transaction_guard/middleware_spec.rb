@@ -1,5 +1,5 @@
 require 'spec_helper'
-
+require 'stringio'
 require 'sidekiq/testing'
 
 class TestWorker
@@ -46,11 +46,11 @@ class InTransactionWorker
   end
 end
 
-describe SidekiqTransactionGuard::Middleware do
+describe Sidekiq::TransactionGuard::Middleware do
   before(:all) do
     Sidekiq.configure_client do |config|
       config.client_middleware do |chain|
-        chain.add SidekiqTransactionGuard::Middleware
+        chain.add Sidekiq::TransactionGuard::Middleware
       end
     end
   end
@@ -58,7 +58,7 @@ describe SidekiqTransactionGuard::Middleware do
   after(:all) do
     Sidekiq.configure_client do |config|
       config.client_middleware do |chain|
-        chain.remove SidekiqTransactionGuard::Middleware
+        chain.remove Sidekiq::TransactionGuard::Middleware
       end
     end
   end
@@ -78,14 +78,14 @@ describe SidekiqTransactionGuard::Middleware do
     let(:log){ StringIO.new }
 
     around(:each) do |example|
-      save_mode = SidekiqTransactionGuard.mode
+      save_mode = Sidekiq::TransactionGuard.mode
       save_logger = Sidekiq.logger
       begin
-        SidekiqTransactionGuard.mode = :warn
+        Sidekiq::TransactionGuard.mode = :warn
         Sidekiq.logger = Logger.new(log)
         example.call
       ensure
-        SidekiqTransactionGuard.mode = save_mode
+        Sidekiq::TransactionGuard.mode = save_mode
         Sidekiq.logger = save_logger
       end
     end
@@ -108,7 +108,7 @@ describe SidekiqTransactionGuard::Middleware do
 
     it "should be able to define the mode on the worker class" do
       TestModel.transaction do
-        expect{ ErrorWorker.perform_async }.to raise_error(SidekiqTransactionGuard::InsideTransactionError)
+        expect{ ErrorWorker.perform_async }.to raise_error(Sidekiq::TransactionGuard::InsideTransactionError)
       end
       expect(ErrorWorker.jobs.size).to eq 0
     end
@@ -116,14 +116,14 @@ describe SidekiqTransactionGuard::Middleware do
 
   describe "inside a transaction with mode :stderr" do
     around(:each) do |example|
-      save_mode = SidekiqTransactionGuard.mode
+      save_mode = Sidekiq::TransactionGuard.mode
       save_stderr = $stderr
       begin
-        SidekiqTransactionGuard.mode = :stderr
+        Sidekiq::TransactionGuard.mode = :stderr
         $stderr = StringIO.new
         example.call
       ensure
-        SidekiqTransactionGuard.mode = save_mode
+        Sidekiq::TransactionGuard.mode = save_mode
         $stderr = save_stderr
       end
     end
@@ -137,7 +137,7 @@ describe SidekiqTransactionGuard::Middleware do
     end
 
     it "should log to STDERR jobs being scheduled inside of a transaction if there is no logger" do
-      SidekiqTransactionGuard.mode = :warn
+      Sidekiq::TransactionGuard.mode = :warn
       allow(Sidekiq).to receive(:logger).and_return(nil)
       TestModel.transaction do
         TestWorker.perform_async
@@ -149,25 +149,25 @@ describe SidekiqTransactionGuard::Middleware do
 
   describe "inside a transaction with mode :error" do
     around(:each) do |example|
-      save_mode = SidekiqTransactionGuard.mode
+      save_mode = Sidekiq::TransactionGuard.mode
       begin
-        SidekiqTransactionGuard.mode = :error
+        Sidekiq::TransactionGuard.mode = :error
         example.call
       ensure
-        SidekiqTransactionGuard.mode = save_mode
+        Sidekiq::TransactionGuard.mode = save_mode
       end
     end
 
     it "should raise an error if job is scheduled inside of a transaction" do
       TestModel.transaction do
-        expect{ TestWorker.perform_async }.to raise_error(SidekiqTransactionGuard::InsideTransactionError)
+        expect{ TestWorker.perform_async }.to raise_error(Sidekiq::TransactionGuard::InsideTransactionError)
       end
       expect(TestWorker.jobs.size).to eq 0
     end
 
     it "should raise an error if job is scheduled in the future" do
       TestModel.transaction do
-        expect{ TestWorker.perform_in(60) }.to raise_error(SidekiqTransactionGuard::InsideTransactionError)
+        expect{ TestWorker.perform_in(60) }.to raise_error(Sidekiq::TransactionGuard::InsideTransactionError)
       end
       expect(TestWorker.jobs.size).to eq 0
     end
