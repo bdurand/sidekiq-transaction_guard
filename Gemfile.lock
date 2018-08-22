@@ -2,7 +2,7 @@ PATH
   remote: .
   specs:
     sidekiq-transaction-guard (1.0.0)
-      activerecord (>= 4.0, < 6)
+      activerecord (>= 4.0)
       sidekiq (>= 3.0)
 
 GEM
@@ -30,7 +30,7 @@ GEM
     rack (2.0.5)
     rack-protection (2.0.3)
       rack
-    rake (10.5.0)
+    rake (12.3.1)
     redis (4.0.2)
     rspec (3.8.0)
       rspec-core (~> 3.8.0)
