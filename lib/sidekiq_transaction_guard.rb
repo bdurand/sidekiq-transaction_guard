@@ -2,13 +2,16 @@
 
 require 'sidekiq'
 require 'set'
+require 'thread'
 require 'active_record'
 
-require 'sidekiq_transaction_guard/middleware'
+require_relative 'sidekiq_transaction_guard/middleware'
 
 module SidekiqTransactionGuard
   class InsideTransactionError < StandardError
   end
+
+  @lock = Mutex.new
 
   class << self
     VALID_MODES = [:warn, :stderr, :error, :disabled].freeze
@@ -56,9 +59,15 @@ module SidekiqTransactionGuard
 
     # Return true if any connection is currently inside of a transaction.
     def in_transaction?
-      @connection_classes.any? do |connection_class|
-        connection = connection_class.connection
-        connection.open_transactions > allowed_transaction_level(connection_class)
+      connection_classes = @lock.synchronize{ @connection_classes.dup }
+      connection_classes.any? do |connection_class|
+        connection_pool = connection_class.connection_pool
+        connection = connection_class.connection if connection_pool.active_connection?
+        if connection
+          connection.open_transactions > allowed_transaction_level(connection_class)
+        else
+          false
+        end
       end
     end
 
