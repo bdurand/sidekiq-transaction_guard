@@ -91,12 +91,7 @@ module SidekiqTransactionGuard
 
     def allowed_transaction_level(connection_class)
       connection_counts = Thread.current[:sidekiq_rails_transaction_guard]
-
-      if connection_counts && connection_counts.key?(connection_class.name)
-        connection_counts[connection_class.name]
-      else
-        0
-      end
+      (connection_counts && connection_counts[connection_class.name]) || 0
     end
   end
 end
