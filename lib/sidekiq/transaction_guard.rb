@@ -111,9 +111,7 @@ module Sidekiq
   end
 end
 
-# Configure the default transaction guard mode
+# Configure the default transaction guard mode for known testing environments.
 if ENV["RAILS_ENV"] == "test" || ENV["RACK_ENV"] == "test"
   Sidekiq::TransactionGuard.mode = :stderr
-else
-  Sidekiq::TransactionGuard.mode = :warn
 end
