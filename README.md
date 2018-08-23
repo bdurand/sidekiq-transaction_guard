@@ -1,4 +1,4 @@
-# SidekiqTransactionGuard
+# Sidekiq::TransactionGuard
 
 You should never call a Sidekiq worker that relies on the state of the database from within a database transaction. You will end up with a race condition since the worker could kick off before the transaction is actually written to the database. This gem can be used to highlight where your code may be scheduling workers in an indeterminate state.
 
@@ -56,11 +56,11 @@ end
 You can use this gem to add Sidekiq client middleware that will either warn you or raise an error when workers are scheduled inside of a database transaction. You can do this by simply adding this to your application's initialization code:
 
 ```ruby
-require 'sidekiq-transaction-guard'
+require 'sidekiq/transaction-guard'
 
 Sidekiq.configure_client do |config|
   config.client_middleware do |chain|
-    chain.add(SidekiqTransactionGuard::Middleware)
+    chain.add(Sidekiq::TransactionGuard::Middleware)
   end
 end
 ```
@@ -71,16 +71,16 @@ By default, the behavior is to log that a worker is being scheduled inside of a 
 
 ```ruby
 # Raise errors
-SidekiqTransactionGuard.mode = :error
+Sidekiq::TransactionGuard.mode = :error
 
 # Log to STDERR
-SidekiqTransactionGuard.mode = :stderr
+Sidekiq::TransactionGuard.mode = :stderr
 
 # Log to Sidekiq.logger
-SidekiqTransactionGuard.mode = :warn
+Sidekiq::TransactionGuard.mode = :warn
 
 # Disable entirely
-SidekiqTransactionGuard.mode = :disabled
+Sidekiq::TransactionGuard.mode = :disabled
 ```
 
 You can also set the mode on individual worker classes with `sidekiq_options transaction_guard: mode`.
@@ -108,7 +108,7 @@ You can also set a block to be called if a worker is scheduled inside of a trans
 
 ```ruby
 # Define a global notify handler
-SidekiqTransactionGuard.notify do |job|
+Sidekiq::TransactionGuard.notify do |job|
   # Do what ever you need to. The job argument will be a Sidekiq job hash.
 end
 
@@ -129,7 +129,7 @@ end
 
 ## Multiple Databases
 
-Out of the box, this gem only deals with one database and monitors the connection pool returned by `ActiveRecord::Base.connection`. If you have multiple databases (or even multiple connections to the same database) that you want to track, you need to tell `SidekiqTransactionGuard` about them.
+Out of the box, this gem only deals with one database and monitors the connection pool returned by `ActiveRecord::Base.connection`. If you have multiple databases (or even multiple connections to the same database) that you want to track, you need to tell `Sidekiq::TransactionGuard` about them.
 
 ```ruby
 class MyClass < ActiveRecord::Base
@@ -137,7 +137,7 @@ class MyClass < ActiveRecord::Base
   establish_connection(configurations["otherdb"])
 end
 
-SidekiqTransactionGuard.add_connection_class(MyClass)
+Sidekiq::TransactionGuard.add_connection_class(MyClass)
 ```
 
 The class is used to get to the connection pool used for the class. You only need to add one class per connection pool, so you don't need to add any subclasses of `MyClass`.
@@ -147,7 +147,7 @@ The class is used to get to the connection pool used for the class. You only nee
 If you're using transaction fixtures in your tests, there will always be a database transaction open. If you're using [DatabaseCleaner](https://github.com/DatabaseCleaner/database_cleaner) in your tests, you just need to include this snippet in your test suite initializer:
 
 ```ruby
-require 'sidekiq_transaction_guard/database_cleaner'
+require 'sidekiq/transaction_guard/database_cleaner'
 ```
 
 This will add the appropriate code so that the surrounding transaction in the test suite is ignored (i.e. workers will only warn/error if there is more than one open transaction).

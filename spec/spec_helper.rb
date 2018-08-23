@@ -1,5 +1,5 @@
 require "bundler/setup"
-require "sidekiq-transaction-guard"
+require "sidekiq/transaction_guard"
 
 RSpec.configure do |config|
   # Enable flags like --only-failures and --next-failure
@@ -34,4 +34,4 @@ class UnregisteredConnectionModel < ActiveRecord::Base
   end unless table_exists?
 end
 
-SidekiqTransactionGuard.add_connection_class(OtherConnectionModel)
+Sidekiq::TransactionGuard.add_connection_class(OtherConnectionModel)

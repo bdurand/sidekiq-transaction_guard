@@ -2,16 +2,16 @@
 
 lib = File.expand_path("../lib", __FILE__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
-require "sidekiq_transaction_guard/version"
+require "sidekiq/transaction_guard/version"
 
 Gem::Specification.new do |spec|
-  spec.name          = "sidekiq-transaction-guard"
-  spec.version       = SidekiqTransactionGuard::VERSION
+  spec.name          = "sidekiq-transaction_guard"
+  spec.version       = Sidekiq::TransactionGuard::VERSION
   spec.authors       = ["Brian Durand", "Winston Durand"]
   spec.email         = ["bbdurand@gmail.com", "me@winstondurand.com"]
 
   spec.summary       = "Protect from accidentally invoking Sidekiq jobs when there are open database transactions"
-  spec.homepage      = "https://github.com/bdurand/sidekiq-transaction-guard"
+  spec.homepage      = "https://github.com/bdurand/sidekiq-transaction_guard"
   spec.license       = "MIT"
 
   # Specify which files should be added to the gem when it is released.
@@ -33,4 +33,5 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "rspec", "~> 3.0"
   spec.add_development_dependency "database_cleaner"
   spec.add_development_dependency "sqlite3"
+  spec.add_development_dependency "appraisal"
 end
