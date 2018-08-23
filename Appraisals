@@ -3,7 +3,7 @@
 # with that version
 
 RAILS_MINOR_RELEASES = ["4.0", "4.1", "4.2", "5.0", "5.1", "5.2"].freeze
-SIDEKIQ_RELEASES = ["3", "4", "5"]
+SIDEKIQ_RELEASES = ["3", "4", "5"].freeze
 
 RAILS_MINOR_RELEASES.each do |version|
   appraise "activerecord-#{version}" do
