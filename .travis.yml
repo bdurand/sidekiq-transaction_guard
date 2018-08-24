@@ -1,10 +1,24 @@
 language: ruby
 rvm:
- - 2.2.2
- - 2.5
+  - 2.5
+  - 2.2.2
+
+cache: bundler
+
+gemfile:
+  - gemfiles/activerecord_4.0.gemfile
+  - gemfiles/activerecord_4.1.gemfile
+  - gemfiles/activerecord_4.2.gemfile
+  - gemfiles/activerecord_5.0.gemfile
+  - gemfiles/activerecord_5.1.gemfile
+  - gemfiles/activerecord_5.2.gemfile
+  - gemfiles/sidekiq_3.gemfile
+  - gemfiles/sidekiq_4.gemfile
+  - gemfiles/sidekiq_5.gemfile
+
 script:
-  - bundle exec appraisal install
-  - bundle exec rake appraisals
+  - bundle exec rake spec
+
 env:
   RACK_ENV: ""
   RAILS_ENV: ""
