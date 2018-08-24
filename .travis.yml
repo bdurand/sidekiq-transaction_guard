@@ -5,7 +5,14 @@ rvm:
 
 cache: bundler
 
+branches:
+  # Only build master and release version tags
+  only:
+    - master
+    - /^v\d+\.\d+(\.\d+)?(-\S*)?$/
+
 gemfile:
+  - Gemfile
   - gemfiles/activerecord_5.2.gemfile
   - gemfiles/activerecord_5.1.gemfile
   - gemfiles/activerecord_5.0.gemfile
@@ -22,3 +29,9 @@ script:
 env:
   RACK_ENV: ""
   RAILS_ENV: ""
+
+# Only run all the gemfiles against the newest ruby version
+matrix:
+  exclude:
+    - rvm: 2.2.2
+      gemfile: /^gemfiles\//
