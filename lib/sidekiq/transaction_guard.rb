@@ -3,7 +3,6 @@
 require 'sidekiq'
 require 'set'
 require 'thread'
-require 'active_record'
 
 require_relative 'transaction_guard/middleware'
 
@@ -13,6 +12,9 @@ module Sidekiq
     end
 
     @lock = Mutex.new
+    @connection_classes = Set.new
+    @notify = nil
+    @mode = :warn
 
     class << self
       VALID_MODES = [:warn, :stderr, :error, :disabled].freeze
@@ -46,7 +48,7 @@ module Sidekiq
 
       # Return the block set as the notify handler with a call to `notify`.
       def notify_block
-        @notify ||= nil
+        @notify
       end
 
       # Add a class that maintains it's own connection pool to the connections
@@ -54,13 +56,15 @@ module Sidekiq
       # or subclasses. Only the base class that establishes a new connection pool
       # with a call to `establish_connection` needs to be added.
       def add_connection_class(connection_class)
-        @connection_classes ||= Set.new
-        @connection_classes << connection_class
+        @lock.synchronize{ @connection_classes << connection_class }
       end
 
       # Return true if any connection is currently inside of a transaction.
       def in_transaction?
-        connection_classes = @lock.synchronize{ @connection_classes.dup }
+        connection_classes = [ActiveRecord::Base]
+        unless @connection_classes.empty?
+          connection_classes.concat(@lock.synchronize{ @connection_classes.to_a })
+        end
         connection_classes.any? do |connection_class|
           connection_pool = connection_class.connection_pool
           connection = connection_class.connection if connection_pool.active_connection?
@@ -107,12 +111,7 @@ module Sidekiq
   end
 end
 
-# Configure the default transaction guard mode
+# Configure the default transaction guard mode for known testing environments.
 if ENV["RAILS_ENV"] == "test" || ENV["RACK_ENV"] == "test"
   Sidekiq::TransactionGuard.mode = :stderr
-else
-  Sidekiq::TransactionGuard.mode = :warn
 end
-
-# Add the ActiveRecord::Base connection class by default
-Sidekiq::TransactionGuard.add_connection_class(::ActiveRecord::Base)
