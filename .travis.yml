@@ -29,9 +29,3 @@ script:
 env:
   RACK_ENV: ""
   RAILS_ENV: ""
-
-# Only run all the gemfiles against the newest ruby version
-matrix:
-  exclude:
-    - rvm: 2.2.2
-      gemfile: /^gemfiles\//
