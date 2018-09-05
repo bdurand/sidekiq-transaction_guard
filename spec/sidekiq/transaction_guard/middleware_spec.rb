@@ -117,15 +117,16 @@ describe Sidekiq::TransactionGuard::Middleware do
   describe "inside a transaction with mode :stderr" do
     around(:each) do |example|
       save_mode = Sidekiq::TransactionGuard.mode
-      save_stderr = $stderr
       begin
         Sidekiq::TransactionGuard.mode = :stderr
-        $stderr = StringIO.new
         example.call
       ensure
         Sidekiq::TransactionGuard.mode = save_mode
-        $stderr = save_stderr
       end
+    end
+
+    before(:each) do
+      stub_const("STDERR", StringIO.new)
     end
 
     it "should report to STDERR" do
@@ -133,7 +134,7 @@ describe Sidekiq::TransactionGuard::Middleware do
         TestWorker.perform_async
       end
       expect(TestWorker.jobs.size).to eq 1
-      expect($stderr.string).to include "TestWorker was called from inside a database transaction"
+      expect(STDERR.string).to include "TestWorker was called from inside a database transaction"
     end
 
     it "should log to STDERR jobs being scheduled inside of a transaction if there is no logger" do
@@ -143,7 +144,7 @@ describe Sidekiq::TransactionGuard::Middleware do
         TestWorker.perform_async
       end
       expect(TestWorker.jobs.size).to eq 1
-      expect($stderr.string).to include "TestWorker was called from inside a database transaction"
+      expect(STDERR.string).to include "TestWorker was called from inside a database transaction"
     end
   end
 

@@ -52,7 +52,7 @@ module Sidekiq
             if Sidekiq.logger
               Sidekiq.logger.error(e)
             else
-              $stderr.write("ERROR on Sidekiq::TransactionGuard notify block for #{worker_class}: #{e.inspect}\n")
+              STDERR.write("ERROR on Sidekiq::TransactionGuard notify block for #{worker_class}: #{e.inspect}\n")
             end
           end
         end
@@ -69,7 +69,7 @@ module Sidekiq
             if logger
               logger.warn(message)
             else
-              $stderr.write("WARNING #{message}\n")
+              STDERR.write("WARNING #{message}\n")
             end
             notify!(worker_class, job)
           end

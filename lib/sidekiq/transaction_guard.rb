@@ -23,7 +23,7 @@ module Sidekiq
       # default mode is `:warn`. This controls the behavior of workers enqueued
       # inside of transactions.
       # * :warn - Log to Sidekiq.logger
-      # * :stderr - Log to $stderr
+      # * :stderr - Log to STDERR
       # * :error - Throw a `Sidekiq::TransactionGuard::InsideTransactionError`
       # * :disabled - Allow workers inside of transactions
       def mode=(symbol)
