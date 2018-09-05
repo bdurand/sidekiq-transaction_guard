@@ -1,5 +1,8 @@
 # Sidekiq::TransactionGuard
 
+[![Build Status](https://travis-ci.com/bdurand/sidekiq-transaction_guard.svg?branch=master)](https://travis-ci.com/bdurand/sidekiq-transaction_guard)
+[![Maintainability](https://api.codeclimate.com/v1/badges/17bbf5cb6eda022028fe/maintainability)](https://codeclimate.com/github/bdurand/sidekiq-transaction_guard/maintainability)
+
 You should never call a Sidekiq worker that relies on the state of the database from within a database transaction. You will end up with a race condition since the worker could kick off before the transaction is actually written to the database. This gem can be used to highlight where your code may be scheduling workers in an indeterminate state.
 
 ## The Problem
