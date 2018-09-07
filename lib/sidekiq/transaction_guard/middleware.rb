@@ -39,8 +39,7 @@ module Sidekiq
       end
 
       def read_sidekiq_option(worker_class, option_name)
-        options = worker_class.sidekiq_options
-        options.fetch(option_name.to_s, options[option_name])
+        worker_class.sidekiq_options_hash[option_name.to_s]
       end
 
       def notify!(worker_class, job)
