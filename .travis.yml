@@ -9,6 +9,7 @@ branches:
   only:
     - master
     - /^v\d+\.\d+(\.\d+)?(-\S*)?$/
+    - travis
 
 gemfile:
   - Gemfile
