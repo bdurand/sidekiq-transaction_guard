@@ -40,6 +40,7 @@ matrix:
   #   gemfile: gemfiles/sidekiq_3.gemfile
 
 script:
+  - gem list bundler
   - bundle exec rake spec
 
 env:
