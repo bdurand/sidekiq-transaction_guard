@@ -2,7 +2,7 @@ language: ruby
 rvm:
   - "2.6"
 
-cache: bundler
+# cache: bundler
 
 branches:
   # Only build master and release version tags
@@ -15,25 +15,28 @@ gemfile:
 
 matrix:
   include:
-  - rvm: "2.2.2"
-    gemfile: gemfiles/activerecord_4.1.gemfile
-  - rvm: "2.2.2"
-    gemfile: gemfiles/activerecord_4.0.gemfile
-  - rvm: "2.2.2"
-    gemfile: gemfiles/sidekiq_3.gemfile
+  - rvm: "2.6"
+    gemfile: Gemfile
 
   - rvm: "2.5"
     gemfile: gemfiles/activerecord_5.2.gemfile
-  - rvm: "2.5"
-    gemfile: gemfiles/activerecord_5.1.gemfile
-  - rvm: "2.5"
-    gemfile: gemfiles/activerecord_5.0.gemfile
-  - rvm: "2.5"
-    gemfile: gemfiles/activerecord_4.2.gemfile
-  - rvm: "2.5"
-    gemfile: gemfiles/sidekiq_5.gemfile
-  - rvm: "2.5"
-    gemfile: gemfiles/sidekiq_4.gemfile
+  # - rvm: "2.5"
+  #   gemfile: gemfiles/activerecord_5.1.gemfile
+  # - rvm: "2.5"
+  #   gemfile: gemfiles/activerecord_5.0.gemfile
+  # - rvm: "2.5"
+  #   gemfile: gemfiles/activerecord_4.2.gemfile
+  # - rvm: "2.5"
+  #   gemfile: gemfiles/sidekiq_5.gemfile
+  # - rvm: "2.5"
+  #   gemfile: gemfiles/sidekiq_4.gemfile
+  #
+  # - rvm: "2.2.2"
+  #   gemfile: gemfiles/activerecord_4.1.gemfile
+  # - rvm: "2.2.2"
+  #   gemfile: gemfiles/activerecord_4.0.gemfile
+  # - rvm: "2.2.2"
+  #   gemfile: gemfiles/sidekiq_3.gemfile
 
 script:
   - bundle exec rake spec
