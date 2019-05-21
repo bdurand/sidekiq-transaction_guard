@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "lib/capistrano/docker_deploy/version"
+require_relative "lib/sidekiq/transaction_guard/version"
 
 Gem::Specification.new do |spec|
   spec.name          = "sidekiq-transaction_guard"
