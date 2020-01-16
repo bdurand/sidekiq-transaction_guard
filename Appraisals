@@ -3,8 +3,8 @@
 # The code is a little more tightly integrated with ActiveRecord so check
 # all minor releases. Only need to sanity check major releases of Sidekiq.
 
-RAILS_MINOR_RELEASES = ["5.2", "5.1", "5.0", "4.2", "4.1", "4.0"].freeze
-SIDEKIQ_MAJOR_RELEASES = ["5", "4", "3"].freeze
+RAILS_MINOR_RELEASES = ["6.0", "5.2", "5.1", "5.0", "4.2", "4.1", "4.0"].freeze
+SIDEKIQ_MAJOR_RELEASES = ["6", "5", "4", "3"].freeze
 
 RAILS_MINOR_RELEASES.each do |version|
   appraise "activerecord-#{version}" do

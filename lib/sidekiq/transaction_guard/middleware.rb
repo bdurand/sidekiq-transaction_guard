@@ -12,8 +12,10 @@ module Sidekiq
     class Middleware
       def call(worker_class, job, queue, redis_pool)
         # Check if we need to log this. Also, convert worker_class to its actual class
-        log_transaction(worker_class.constantize, job) if in_transaction?
-
+        if in_transaction?
+          worker_class = worker_class.constantize if worker_class.is_a?(String)
+          log_transaction(worker_class, job)
+        end
         yield
       end
 
