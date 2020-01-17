@@ -23,6 +23,7 @@ SIDEKIQ_MAJOR_RELEASES.each do |version|
     gem "sidekiq", "~> #{version}.0"
     if version.to_f < 4
       gem "redis", "~> 3.0"
+      gem "i18n", "< 1.5"
     end
   end
 end
