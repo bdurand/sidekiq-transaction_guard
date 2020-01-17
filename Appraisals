@@ -24,6 +24,7 @@ SIDEKIQ_MAJOR_RELEASES.each do |version|
     if version.to_f < 4
       gem "redis", "~> 3.0"
       gem "activerecord", "~> 4.2"
+      gem "sqlite3", "~> 1.3.0"
     end
   end
 end
