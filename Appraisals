@@ -12,11 +12,17 @@ RAILS_MINOR_RELEASES.each do |version|
     if version.to_f < 5.2
       gem "sqlite3", "~> 1.3.0"
     end
+    if version.to_f < 5
+      gem "redis", "~> 3.0"
+    end
   end
 end
 
 SIDEKIQ_MAJOR_RELEASES.each do |version|
   appraise "sidekiq-#{version}" do
     gem "sidekiq", "~> #{version}.0"
+    if version.to_f < 4
+      gem "redis", "~> 3.0"
+    end
   end
 end

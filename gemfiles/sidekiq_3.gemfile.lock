@@ -87,6 +87,7 @@ DEPENDENCIES
   bundler (~> 1.10)
   database_cleaner
   rake
+  redis (~> 3.0)
   rspec (~> 3.0)
   sidekiq (~> 3.0)
   sidekiq-transaction_guard!
