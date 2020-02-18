@@ -5,6 +5,7 @@
 
 RAILS_MINOR_RELEASES = ["6.0", "5.2", "5.1", "5.0", "4.2", "4.1", "4.0"].freeze
 SIDEKIQ_MAJOR_RELEASES = ["6", "5", "4", "3"].freeze
+DATABASE_CLEANDER_MINOR_RELEASES = ["1.5", "1.6", "1.7", "1.8"].freeze
 
 RAILS_MINOR_RELEASES.each do |version|
   appraise "activerecord-#{version}" do
@@ -26,5 +27,11 @@ SIDEKIQ_MAJOR_RELEASES.each do |version|
       gem "activerecord", "~> 4.2"
       gem "sqlite3", "~> 1.3.0"
     end
+  end
+end
+
+DATABASE_CLEANDER_MINOR_RELEASES.each do |version|
+  appraise "database_cleaner-#{version}" do
+    gem "database_cleaner", "~> #{version}.0"
   end
 end
