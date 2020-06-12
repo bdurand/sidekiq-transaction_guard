@@ -21,16 +21,16 @@ module Sidekiq
 
       private
 
-      def worker_mode(worker_class)
-        read_sidekiq_option(worker_class, :transaction_guard) || Sidekiq::TransactionGuard.mode
+      def worker_mode(job)
+        read_sidekiq_option(job, :transaction_guard) || Sidekiq::TransactionGuard.mode
       end
 
       def in_transaction?
         Sidekiq::TransactionGuard.in_transaction?
       end
 
-      def notify_block(worker_class)
-        handler = read_sidekiq_option(worker_class, :notify_in_transaction)
+      def notify_block(job)
+        handler = read_sidekiq_option(job, :notify_in_transaction)
         if handler
           handler
         elsif handler == false
@@ -40,13 +40,13 @@ module Sidekiq
         end
       end
 
-      def read_sidekiq_option(worker_class, option_name)
-        options = worker_class.sidekiq_options_hash
-        options[option_name.to_s] if options
+      def read_sidekiq_option(job, option_name)
+        # options = worker_class.sidekiq_options_hash
+        job[option_name.to_s]
       end
 
       def notify!(worker_class, job)
-        notify_handler = notify_block(worker_class)
+        notify_handler = notify_block(job)
         if notify_handler
           begin
             notify_handler.call(job)
@@ -61,7 +61,7 @@ module Sidekiq
       end
 
       def log_transaction(worker_class, job)
-        mode = worker_mode(worker_class)
+        mode = worker_mode(job)
         if mode != :disabled
           message = "#{worker_class.name} was called from inside a database transaction"
           if mode == :error
