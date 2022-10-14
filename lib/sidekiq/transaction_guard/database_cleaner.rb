@@ -1,5 +1,5 @@
 require 'sidekiq/transaction_guard'
-require 'database_cleaner'
+require 'database_cleaner/active_record'
 require 'database_cleaner/active_record/transaction'
 
 module Sidekiq
