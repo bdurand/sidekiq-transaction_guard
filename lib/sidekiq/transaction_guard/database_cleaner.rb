@@ -1,6 +1,7 @@
-require 'sidekiq/transaction_guard'
-require 'database_cleaner'
-require 'database_cleaner/active_record/transaction'
+# frozen_string_literal: true
+
+require "sidekiq/transaction_guard"
+require "database_cleaner/active_record"
 
 module Sidekiq
   module TransactionGuard
@@ -16,8 +17,10 @@ module Sidekiq
 
       # Wrap the `Sidekiq::TransactionGuard.testing` which sets up the data structures
       # needed for custom counting of the transaction level within a test block.
+      #
+      # @return [Object] the return value of the block
       def cleaning(&block)
-        Sidekiq::TransactionGuard.testing{ super(&block) }
+        Sidekiq::TransactionGuard.testing { super(&block) }
       end
     end
   end
