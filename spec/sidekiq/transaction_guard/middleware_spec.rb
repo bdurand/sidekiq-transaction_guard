@@ -76,17 +76,19 @@ describe Sidekiq::TransactionGuard::Middleware do
 
   describe "inside a transaciton with mode :warn" do
     let(:log) { StringIO.new }
+    let(:logger) { Logger.new(log) }
+
+    before(:each) do
+      allow(Sidekiq).to receive(:logger).and_return(logger)
+    end
 
     around(:each) do |example|
       save_mode = Sidekiq::TransactionGuard.mode
-      save_logger = Sidekiq.logger
       begin
         Sidekiq::TransactionGuard.mode = :warn
-        Sidekiq.logger = Logger.new(log)
         example.call
       ensure
         Sidekiq::TransactionGuard.mode = save_mode
-        Sidekiq.logger = save_logger
       end
     end
 
