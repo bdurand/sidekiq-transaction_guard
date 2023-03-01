@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "bundler/setup"
 require "sidekiq/transaction_guard"
 
@@ -15,25 +17,31 @@ end
 ActiveRecord::Base.establish_connection("adapter" => "sqlite3", "database" => ":memory:")
 
 class TestModel < ActiveRecord::Base
-  connection.create_table(table_name) do |t|
-    t.column :name, :string
-  end unless table_exists?
+  unless table_exists?
+    connection.create_table(table_name) do |t|
+      t.column :name, :string
+    end
+  end
 end
 
 class OtherConnectionModel < ActiveRecord::Base
   establish_connection("adapter" => "sqlite3", "database" => ":memory:")
 
-  connection.create_table(table_name) do |t|
-    t.column :name, :string
-  end unless table_exists?
+  unless table_exists?
+    connection.create_table(table_name) do |t|
+      t.column :name, :string
+    end
+  end
 end
 
 class UnregisteredConnectionModel < ActiveRecord::Base
   establish_connection("adapter" => "sqlite3", "database" => ":memory:")
 
-  connection.create_table(table_name) do |t|
-    t.column :name, :string
-  end unless table_exists?
+  unless table_exists?
+    connection.create_table(table_name) do |t|
+      t.column :name, :string
+    end
+  end
 end
 
 Sidekiq::TransactionGuard.add_connection_class(OtherConnectionModel)

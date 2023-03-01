@@ -1,6 +1,8 @@
-require 'spec_helper'
-require 'stringio'
-require 'sidekiq/testing'
+# frozen_string_literal: true
+
+require "spec_helper"
+require "stringio"
+require "sidekiq/testing"
 
 class TestWorker
   include Sidekiq::Worker
@@ -12,12 +14,10 @@ end
 class TestWithNotifierWorker
   include Sidekiq::Worker
 
-  sidekiq_options notify_in_transaction: -> (job) { self.in_transaction_args = job["args"] }
+  sidekiq_options notify_in_transaction: ->(job) { self.in_transaction_args = job["args"] }
 
   class << self
-    def in_transaction_args=(val)
-      @in_transaction_args = val
-    end
+    attr_writer :in_transaction_args
 
     def in_transaction_args
       @in_transaction_args if defined?(@in_transaction_args)
@@ -75,18 +75,20 @@ describe Sidekiq::TransactionGuard::Middleware do
   end
 
   describe "inside a transaciton with mode :warn" do
-    let(:log){ StringIO.new }
+    let(:log) { StringIO.new }
+    let(:logger) { Logger.new(log) }
+
+    before(:each) do
+      allow(Sidekiq).to receive(:logger).and_return(logger)
+    end
 
     around(:each) do |example|
       save_mode = Sidekiq::TransactionGuard.mode
-      save_logger = Sidekiq.logger
       begin
         Sidekiq::TransactionGuard.mode = :warn
-        Sidekiq.logger = Logger.new(log)
         example.call
       ensure
         Sidekiq::TransactionGuard.mode = save_mode
-        Sidekiq.logger = save_logger
       end
     end
 
@@ -108,7 +110,7 @@ describe Sidekiq::TransactionGuard::Middleware do
 
     it "should be able to define the mode on the worker class" do
       TestModel.transaction do
-        expect{ ErrorWorker.perform_async }.to raise_error(Sidekiq::TransactionGuard::InsideTransactionError)
+        expect { ErrorWorker.perform_async }.to raise_error(Sidekiq::TransactionGuard::InsideTransactionError)
       end
       expect(ErrorWorker.jobs.size).to eq 0
     end
@@ -125,8 +127,14 @@ describe Sidekiq::TransactionGuard::Middleware do
       end
     end
 
-    before(:each) do
-      stub_const("STDERR", StringIO.new)
+    around(:each) do |example|
+      stream = $stderr
+      begin
+        $stderr = StringIO.new
+        example.call
+      ensure
+        $stderr = stream
+      end
     end
 
     it "should report to STDERR" do
@@ -134,7 +142,7 @@ describe Sidekiq::TransactionGuard::Middleware do
         TestWorker.perform_async
       end
       expect(TestWorker.jobs.size).to eq 1
-      expect(STDERR.string).to include "TestWorker was called from inside a database transaction"
+      expect($stderr.string).to include "TestWorker was called from inside a database transaction"
     end
 
     it "should log to STDERR jobs being scheduled inside of a transaction if there is no logger" do
@@ -144,7 +152,7 @@ describe Sidekiq::TransactionGuard::Middleware do
         TestWorker.perform_async
       end
       expect(TestWorker.jobs.size).to eq 1
-      expect(STDERR.string).to include "TestWorker was called from inside a database transaction"
+      expect($stderr.string).to include "TestWorker was called from inside a database transaction"
     end
   end
 
@@ -161,14 +169,14 @@ describe Sidekiq::TransactionGuard::Middleware do
 
     it "should raise an error if job is scheduled inside of a transaction" do
       TestModel.transaction do
-        expect{ TestWorker.perform_async }.to raise_error(Sidekiq::TransactionGuard::InsideTransactionError)
+        expect { TestWorker.perform_async }.to raise_error(Sidekiq::TransactionGuard::InsideTransactionError)
       end
       expect(TestWorker.jobs.size).to eq 0
     end
 
     it "should raise an error if job is scheduled in the future" do
       TestModel.transaction do
-        expect{ TestWorker.perform_in(60) }.to raise_error(Sidekiq::TransactionGuard::InsideTransactionError)
+        expect { TestWorker.perform_in(60) }.to raise_error(Sidekiq::TransactionGuard::InsideTransactionError)
       end
       expect(TestWorker.jobs.size).to eq 0
     end

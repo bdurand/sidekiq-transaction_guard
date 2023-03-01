@@ -1,0 +1,84 @@
+name: Continuous Integration
+
+on:
+  push:
+    branches:
+      - master
+      - actions-*
+    tags:
+      - v*
+  pull_request:
+    branches-ignore:
+      - actions-*
+
+env:
+  BUNDLE_CLEAN: "true"
+  BUNDLE_PATH: vendor/bundle
+  BUNDLE_JOBS: 3
+  BUNDLE_RETRY: 3
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - ruby: "ruby"
+            standardrb: true
+          - ruby: "3.2"
+            appraisal: "activerecord_7.0"
+          - ruby: "3.1"
+            appraisal: "activerecord_6.1"
+          - ruby: "2.7"
+            appraisal: "activerecord_6.0"
+          - ruby: "2.7"
+            appraisal: "activerecord_5.2"
+          - ruby: "2.6"
+            appraisal: "activerecord_5.1"
+          - ruby: "2.6"
+            appraisal: "activerecord_5.0"
+          - ruby: "2.5"
+            appraisal: "activerecord_4.2"
+          - ruby: "2.5"
+            appraisal: "activerecord_4.1"
+          - ruby: "2.5"
+            appraisal: "activerecord_4.0"
+          - ruby: "3.2"
+            appraisal: "sidekiq_7"
+          - ruby: "3.0"
+            appraisal: "sidekiq_6"
+          - ruby: "2.7"
+            appraisal: "sidekiq_5"
+          - ruby: "2.6"
+            appraisal: "sidekiq_4"
+          - ruby: "2.5"
+            appraisal: "sidekiq_3"
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Ruby ${{ matrix.ruby }}
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: "${{ matrix.ruby }}"
+    - name: Install packages
+      run: |
+        sudo apt-get update
+        sudo apt-get install libsqlite3-dev
+    - name: Setup bundler
+      if: matrix.bundler != ''
+      run: |
+        gem uninstall bundler --all
+        gem install bundler --no-document --version ${{ matrix.bundler }}
+    - name: Set Appraisal bundle
+      if: matrix.appraisal != ''
+      run: |
+        echo "using gemfile gemfiles/${{ matrix.appraisal }}.gemfile"
+        bundle config set gemfile "gemfiles/${{ matrix.appraisal }}.gemfile"
+    - name: Install gems
+      run: |
+        bundle update
+    - name: Run Tests
+      run: bundle exec rake
+    - name: standardrb
+      if:   matrix.standardrb == true
+      run:  bundle exec rake standard
