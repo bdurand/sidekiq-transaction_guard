@@ -3,28 +3,46 @@
 # The code is a little more tightly integrated with ActiveRecord so check
 # all minor releases. Only need to sanity check major releases of Sidekiq.
 
-RAILS_MINOR_RELEASES = ["6.0", "5.2", "5.1", "5.0", "4.2", "4.1", "4.0"].freeze
-SIDEKIQ_MAJOR_RELEASES = ["6", "5", "4", "3"].freeze
-
-RAILS_MINOR_RELEASES.each do |version|
-  appraise "activerecord-#{version}" do
-    gem "activerecord", "~> #{version}.0"
-    if version.to_f < 5.2
-      gem "sqlite3", "~> 1.3.0"
-    end
-    if version.to_f < 5
-      gem "redis", "~> 3.0"
-    end
-  end
+appraise "activerecord-7.1" do
+  gem "activerecord", "~> 7.1.0"
 end
 
-SIDEKIQ_MAJOR_RELEASES.each do |version|
-  appraise "sidekiq-#{version}" do
-    gem "sidekiq", "~> #{version}.0"
-    if version.to_f < 4
-      gem "redis", "~> 3.0"
-      gem "activerecord", "~> 4.2"
-      gem "sqlite3", "~> 1.3.0"
-    end
-  end
+appraise "activerecord-7.0" do
+  gem "activerecord", "~> 7.0.0"
+end
+
+appraise "activerecord-6.1" do
+  gem "activerecord", "~> 6.1.0"
+end
+
+appraise "activerecord-6.0" do
+  gem "activerecord", "~> 6.0.0"
+end
+
+appraise "activerecord-5.2" do
+  gem "activerecord", "~> 5.2.0"
+end
+
+appraise "activerecord-5.1" do
+  gem "activerecord", "~> 5.1.0"
+end
+
+appraise "activerecord-5.0" do
+  gem "activerecord", "~> 5.0.0"
+end
+
+appraise "sidekiq-7" do
+  gem "sidekiq", "~> 7.0"
+end
+
+appraise "sidekiq-6" do
+  gem "sidekiq", "~> 6.0"
+end
+
+appraise "sidekiq-5" do
+  gem "sidekiq", "~> 5.0"
+end
+
+appraise "sidekiq-4" do
+  gem "sidekiq", "~> 4.0"
 end

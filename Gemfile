@@ -1,6 +1,14 @@
+
 source "https://rubygems.org"
 
-# Cover security vulnerability of not loading github gems over HTTPS (just in case...)
-git_source(:github) {|repo_name| "https://github.com/#{repo_name}" }
-
 gemspec
+
+gem "database_cleaner"
+gem "sqlite3"
+
+gem "dotenv"
+gem "rspec", "~> 3.10"
+gem "appraisal"
+gem "standard", "~> 1.0"
+gem "simplecov", "~> 0.21", require: false
+gem "yard"
