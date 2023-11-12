@@ -27,6 +27,8 @@ jobs:
           - ruby: "ruby"
             standardrb: true
           - ruby: "3.2"
+            appraisal: "activerecord_7.1"
+          - ruby: "3.2"
             appraisal: "activerecord_7.0"
           - ruby: "3.1"
             appraisal: "activerecord_6.1"
@@ -40,22 +42,20 @@ jobs:
             appraisal: "activerecord_5.0"
           - ruby: "2.5"
             appraisal: "activerecord_4.2"
-          - ruby: "2.5"
-            appraisal: "activerecord_4.1"
-          - ruby: "2.5"
-            appraisal: "activerecord_4.0"
+            bundler: "1.17.3"
+            gemfile: "gemfiles/activerecord_4.2.gemfile"
           - ruby: "3.2"
             appraisal: "sidekiq_7"
           - ruby: "3.0"
             appraisal: "sidekiq_6"
           - ruby: "2.7"
             appraisal: "sidekiq_5"
-          - ruby: "2.6"
-            appraisal: "sidekiq_4"
           - ruby: "2.5"
-            appraisal: "sidekiq_3"
+            appraisal: "sidekiq_4"
+    env:
+      BUNDLE_GEMFILE: ${{ matrix.gemfile }}
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     - name: Set up Ruby ${{ matrix.ruby }}
       uses: ruby/setup-ruby@v1
       with:

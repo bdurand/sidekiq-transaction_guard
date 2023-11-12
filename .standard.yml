@@ -1,9 +1,8 @@
-format: progress
+ruby_version: 2.2.2
 
-ruby_version: 2.5
+format: progress
 
 ignore:
   - 'spec/**/*':
-    - Lint/ConstantDefinitionInBlock
     - Lint/UselessAssignment
-
+    - Lint/ConstantDefinitionInBlock
