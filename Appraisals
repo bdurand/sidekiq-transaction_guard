@@ -29,6 +29,25 @@ end
 
 appraise "activerecord-5.0" do
   gem "activerecord", "~> 5.0.0"
+  gem "sqlite3", "~> 1.3.0"
+end
+
+appraise "activerecord-4.2" do
+  gem "activerecord", "~> 4.2.0"
+  gem "sqlite3", "~> 1.3.0"
+  gem "bundler", "~> 1.0"
+end
+
+appraise "activerecord-4.1" do
+  gem "activerecord", "~> 4.1.0"
+  gem "sqlite3", "~> 1.3.0"
+  gem "bundler", "~> 1.0"
+end
+
+appraise "activerecord-4.0" do
+  gem "activerecord", "~> 4.0.0"
+  gem "sqlite3", "~> 1.3.0"
+  gem "bundler", "~> 1.0"
 end
 
 appraise "sidekiq-7" do
@@ -44,5 +63,9 @@ appraise "sidekiq-5" do
 end
 
 appraise "sidekiq-4" do
+  gem "sidekiq", "~> 4.0"
+end
+
+appraise "sidekiq-3" do
   gem "sidekiq", "~> 4.0"
 end
