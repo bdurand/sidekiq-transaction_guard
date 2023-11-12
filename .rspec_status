@@ -1,0 +1,16 @@
+example_id                                                     | status | run_time        |
+-------------------------------------------------------------- | ------ | --------------- |
+./spec/sidekiq/transaction_guard/database_cleaner_spec.rb[1:1] | passed | 0.00055 seconds |
+./spec/sidekiq/transaction_guard/middleware_spec.rb[1:1:1]     | passed | 0.00026 seconds |
+./spec/sidekiq/transaction_guard/middleware_spec.rb[1:2:1]     | passed | 0.00094 seconds |
+./spec/sidekiq/transaction_guard/middleware_spec.rb[1:2:2]     | passed | 0.00034 seconds |
+./spec/sidekiq/transaction_guard/middleware_spec.rb[1:2:3]     | passed | 0.0061 seconds  |
+./spec/sidekiq/transaction_guard/middleware_spec.rb[1:3:1]     | passed | 0.0002 seconds  |
+./spec/sidekiq/transaction_guard/middleware_spec.rb[1:3:2]     | passed | 0.00456 seconds |
+./spec/sidekiq/transaction_guard/middleware_spec.rb[1:4:1]     | passed | 0.00018 seconds |
+./spec/sidekiq/transaction_guard/middleware_spec.rb[1:4:2]     | passed | 0.00012 seconds |
+./spec/sidekiq/transaction_guard/middleware_spec.rb[1:4:3]     | passed | 0.00013 seconds |
+./spec/sidekiq/transaction_guard_spec.rb[1:1:1]                | passed | 0.00004 seconds |
+./spec/sidekiq/transaction_guard_spec.rb[1:2:1]                | passed | 0.00006 seconds |
+./spec/sidekiq/transaction_guard_spec.rb[1:2:2]                | passed | 0.0001 seconds  |
+./spec/sidekiq/transaction_guard_spec.rb[1:2:3]                | passed | 0.00007 seconds |
