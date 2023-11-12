@@ -3,6 +3,7 @@
 [![Continuous Integration](https://github.com/bdurand/sidekiq-transaction_guard/actions/workflows/continuous_integration.yml/badge.svg)](https://github.com/bdurand/sidekiq-transaction_guard/actions/workflows/continuous_integration.yml)
 [![Regression Test](https://github.com/bdurand/sidekiq-transaction_guard/actions/workflows/regression_test.yml/badge.svg)](https://github.com/bdurand/sidekiq-transaction_guard/actions/workflows/regression_test.yml)
 [![Ruby Style Guide](https://img.shields.io/badge/code_style-standard-brightgreen.svg)](https://github.com/testdouble/standard)
+[![Gem Version](https://badge.fury.io/rb/sidekiq-transaction_guard.svg)](https://badge.fury.io/rb/sidekiq-transaction_guard)
 
 You should never call a Sidekiq worker that relies on the state of the database from within a database transaction. You will end up with a race condition since the worker could kick off before the transaction is actually written to the database. This gem can be used to highlight where your code may be scheduling workers in an indeterminate state.
 
