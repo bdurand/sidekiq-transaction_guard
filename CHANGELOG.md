@@ -7,15 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## 1.0.2
 
 ### Changed
+
 - Updated database cleaner dependency to use database_cleaner-active_record instead of deprecated database_cleaner gem.
 - Added YARD doc param and return types.
 
 ## 1.0.1
 
 ### Added
+
 - Sidekiq 6.0 compatibility
 
 ## 1.0.0
 
 ### Added
+
 - Initial release

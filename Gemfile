@@ -2,11 +2,12 @@ source "https://rubygems.org"
 
 gemspec
 
-gem "rspec", "~> 3.0"
-gem "rake"
-gem "sqlite3"
 gem "database_cleaner-active_record"
+gem "sqlite3"
+
+gem "dotenv"
+gem "rspec", "~> 3.10"
 gem "appraisal"
-gem "standard", "~>1.0"
-gem "pry-byebug"
+gem "standard", "~> 1.0"
+gem "simplecov", require: false
 gem "yard"
