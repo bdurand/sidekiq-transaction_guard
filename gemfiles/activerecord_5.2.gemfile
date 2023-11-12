@@ -2,7 +2,7 @@
 
 source "https://rubygems.org"
 
-gem "database_cleaner"
+gem "database_cleaner-active_record"
 gem "sqlite3"
 gem "dotenv"
 gem "rspec", "~> 3.10"

@@ -59,7 +59,7 @@ end
 You can use this gem to add Sidekiq client middleware that will either warn you or raise an error when workers are scheduled inside of a database transaction. You can do this by simply adding this to your application's initialization code:
 
 ```ruby
-require 'sidekiq/transaction-guard'
+require 'sidekiq/transaction_guard'
 
 Sidekiq.configure_client do |config|
   config.client_middleware do |chain|

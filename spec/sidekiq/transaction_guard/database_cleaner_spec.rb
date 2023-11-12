@@ -1,14 +1,14 @@
-require 'spec_helper'
+# frozen_string_literal: true
+
+require "spec_helper"
 
 begin
-  require 'database_cleaner'
+  require "database_cleaner-active_record"
 rescue LoadError
-  STDERR.puts("DatabaseCleaner not available; specs not run")
+  warn("DatabaseCleaner not available; specs not run")
 end
 
-DatabaseCleaner.orm = :active_record
-
-require 'sidekiq/transaction_guard/database_cleaner'
+require "sidekiq/transaction_guard/database_cleaner"
 
 describe Sidekiq::TransactionGuard::DatabaseCleaner do
   it "should not count the wrapping transaction in determining if a transaction is open" do
