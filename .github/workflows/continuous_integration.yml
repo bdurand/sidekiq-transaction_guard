@@ -44,14 +44,6 @@ jobs:
             appraisal: "activerecord_4.2"
             bundler: "1.17.3"
             gemfile: "gemfiles/activerecord_4.2.gemfile"
-          - ruby: "2.4"
-            appraisal: "activerecord_4.1"
-            bundler: "1.17.3"
-            gemfile: "gemfiles/activerecord_4.1.gemfile"
-          - ruby: "2.3"
-            appraisal: "activerecord_4.0"
-            bundler: "1.17.3"
-            gemfile: "gemfiles/activerecord_4.0.gemfile"
           - ruby: "3.2"
             appraisal: "sidekiq_7"
           - ruby: "3.0"
@@ -60,8 +52,6 @@ jobs:
             appraisal: "sidekiq_5"
           - ruby: "2.5"
             appraisal: "sidekiq_4"
-          - ruby: "2.4"
-            appraisal: "sidekiq_3"
     env:
       BUNDLE_GEMFILE: ${{ matrix.gemfile }}
     steps:
