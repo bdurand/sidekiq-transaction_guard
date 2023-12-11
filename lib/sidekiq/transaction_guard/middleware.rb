@@ -10,6 +10,10 @@ module Sidekiq
     # the default behavior set in `Sidekiq::TransactionGuard.mode` and
     # `Sidekiq::TransactionGuard.notify` respectively.
     class Middleware
+      if Gem::Version.new(Sidekiq::VERSION) >= Gem::Version.new("7.0")
+        include Sidekiq::ClientMiddleware
+      end
+
       def call(worker_class, job, queue, redis_pool)
         # Check if we need to log this. Also, convert worker_class to its actual class
         if in_transaction?
