@@ -1,7 +1,6 @@
 # Sidekiq Transaction Guard
 
 [![Continuous Integration](https://github.com/bdurand/sidekiq-transaction_guard/actions/workflows/continuous_integration.yml/badge.svg)](https://github.com/bdurand/sidekiq-transaction_guard/actions/workflows/continuous_integration.yml)
-[![Regression Test](https://github.com/bdurand/sidekiq-transaction_guard/actions/workflows/regression_test.yml/badge.svg)](https://github.com/bdurand/sidekiq-transaction_guard/actions/workflows/regression_test.yml)
 [![Ruby Style Guide](https://img.shields.io/badge/code_style-standard-brightgreen.svg)](https://github.com/testdouble/standard)
 [![Gem Version](https://badge.fury.io/rb/sidekiq-transaction_guard.svg)](https://badge.fury.io/rb/sidekiq-transaction_guard)
 
@@ -105,8 +104,6 @@ You can use the `:disabled` mode to allow individual worker classes to be schedu
 SomeWorker.sidekiq_options.merge(transaction_guard: :disabled)
 ```
 
-You could
-
 ### Notification Handlers
 
 You can also set a block to be called if a worker is scheduled inside of a transaction. This can be useful if you use an error logging service to notify you of problematic calls in production so you can fix them.
@@ -158,3 +155,31 @@ require 'sidekiq/transaction_guard/database_cleaner'
 This will add the appropriate code so that the surrounding transaction in the test suite is ignored (i.e. workers will only warn/error if there is more than one open transaction).
 
 If you're using something else for your transactional fixtures or have some other weird setup, look in the `lib/sidekiq_transaction_guard/database_cleaner.rb` file for an example of what you need to do.
+
+## Installation
+
+Add this line to your application's Gemfile:
+
+```ruby
+gem "sidekiq-transaction_guard"
+```
+
+And then execute:
+```bash
+$ bundle install
+```
+
+Or install it yourself as:
+```bash
+$ gem install sidekiq-transaction_guard
+```
+
+## Contributing
+
+Open a pull request on GitHub.
+
+Please use the [standardrb](https://github.com/testdouble/standard) syntax and lint your code with `standardrb --fix` before submitting.
+
+## License
+
+The gem is available as open source under the terms of the [MIT License](https://opensource.org/licenses/MIT).

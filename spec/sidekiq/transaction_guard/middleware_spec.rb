@@ -46,7 +46,7 @@ class InTransactionWorker
   end
 end
 
-describe Sidekiq::TransactionGuard::Middleware do
+RSpec.describe Sidekiq::TransactionGuard::Middleware do
   before(:all) do
     Sidekiq.configure_client do |config|
       config.client_middleware do |chain|

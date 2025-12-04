@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.1.0
+
+### Added
+
+- Added `count` parameter to `set_allowed_transaction_level` to allow setting the allowed transaction level explicitly. This is useful for test setups where the transaction level cannot be determined automatically, such as when using ActiveRecord transactional fixtures.
+- Added Railtie for automatic integration with Rails applications.
+- Added helpers for easier testing setup with RSpec.
+
+### Removed
+
+- Removed support for ActiveRecord versions prior to 6.0.
+- Removed support for Sidekiq versions prior to 6.0.
+
 ## 1.0.3
 
 ### Changed

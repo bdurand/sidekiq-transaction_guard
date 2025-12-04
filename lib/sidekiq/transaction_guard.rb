@@ -5,6 +5,10 @@ require "set"
 
 require_relative "transaction_guard/middleware"
 
+if defined?(Rails::Railtie)
+  require_relative "transaction_guard/railtie"
+end
+
 module Sidekiq
   module TransactionGuard
     class InsideTransactionError < StandardError
@@ -68,14 +72,17 @@ module Sidekiq
         @lock.synchronize { @connection_classes << connection_class }
       end
 
+      # Return the classes that have been added via `add_connection_class`.
+      #
+      # @return [Array<Class>]
+      def connection_classes
+        ([ActiveRecord::Base] + @lock.synchronize { @connection_classes.to_a }).uniq
+      end
+
       # Return true if any connection is currently inside of a transaction.
       #
       # @return [Boolean]
       def in_transaction?
-        connection_classes = [ActiveRecord::Base]
-        unless @connection_classes.empty?
-          connection_classes.concat(@lock.synchronize { @connection_classes.to_a })
-        end
         connection_classes.any? do |connection_class|
           connection_pool = connection_class.connection_pool
           connection = connection_class.connection if connection_pool.active_connection?
@@ -107,14 +114,25 @@ module Sidekiq
       # for that class' connection will be set as the zero point. This method can only
       # be called inside a block wrapped with the `testing` method.
       #
-      # @param connection_class [Class]
+      # @param connection_classes [Class, Array<Class>, :all] the connection class to set the allowed
+      #   transaction level for. If `:all` is provided, set the allowed transaction level
+      #   for all connection classes set via `add_connection_class`.
+      # @param count [Integer, nil] if provided, set the allowed transaction level to this
+      #   value instead of the current transaction count. Use this if you cannot add the
+      #   hook in the correct spot in your test setup. ActiveRecord transactional fixtures
+      #   require this to be set while DatabaseCleaner will grab it dynamically.
       # @return [void]
-      def set_allowed_transaction_level(connection_class)
+      def set_allowed_transaction_level(connection_classes, count = nil)
         connection_counts = Thread.current[:sidekiq_rails_transaction_guard]
         unless connection_counts
           raise("set_allowed_transaction_level is only allowed inside a testing block")
         end
-        connection_counts[connection_class.name] = connection_class.connection.open_transactions if connection_counts
+
+        connection_classes = self.connection_classes if connection_classes == :all
+        Array(connection_classes).each do |connection_class|
+          class_count = count || connection_class.connection.open_transactions
+          connection_counts[connection_class.name] = class_count
+        end
       end
 
       private

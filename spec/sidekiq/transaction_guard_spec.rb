@@ -2,9 +2,9 @@
 
 require "spec_helper"
 
-describe Sidekiq::TransactionGuard do
+RSpec.describe Sidekiq::TransactionGuard do
   describe "mode" do
-    it "should default to :warn and be able to be set to :error" do
+    it "should default to :warn and be able to be set to :error", sidekiq_transaction_guard: :default do
       mode = Sidekiq::TransactionGuard.mode
       begin
         expect(Sidekiq::TransactionGuard.mode).to eq :warn
