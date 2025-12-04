@@ -113,7 +113,7 @@ SomeWorker.sidekiq_options.merge(transaction_guard: :disabled)
 
 #### Default Modes
 
-**Rails applications**: The default mode is `:error` in development and test environments (using `Rails.env.local?`), and `:warn` in production.
+**Rails applications**: The default mode is `:error` in development and test environments, and `:warn` in production or other environments.
 
 **Non-Rails applications**: The default mode is `:stderr` if `ENV["RAILS_ENV"]` or `ENV["RACK_ENV"]` is set to `"test"`, otherwise `:warn`.
 
