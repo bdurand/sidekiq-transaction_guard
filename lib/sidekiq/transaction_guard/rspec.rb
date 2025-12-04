@@ -22,17 +22,12 @@ RSpec.configure do |config|
     save_val = Sidekiq::TransactionGuard.mode
     begin
       Sidekiq::TransactionGuard.mode = mode
-      Sidekiq::TransactionGuard.testing do
-        count = 1 if respond_to?(:use_transactional_tests?) && use_transactional_tests?
-        Sidekiq::TransactionGuard.set_allowed_transaction_level(:all, count)
+      transaction_level = 1 if respond_to?(:use_transactional_tests) && use_transactional_tests
+      Sidekiq::TransactionGuard.testing(base_transaction_level: transaction_level) do
         example.run
       end
     ensure
       Sidekiq::TransactionGuard.mode = save_val
     end
-  end
-
-  config.before do
-    Sidekiq::TransactionGuard.set_allowed_transaction_level(ActiveRecord::Base)
   end
 end

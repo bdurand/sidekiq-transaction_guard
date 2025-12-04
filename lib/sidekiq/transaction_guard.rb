@@ -1,13 +1,10 @@
 # frozen_string_literal: true
 
+require "active_record"
 require "sidekiq"
 require "set"
 
 require_relative "transaction_guard/middleware"
-
-if defined?(Rails::Railtie)
-  require_relative "transaction_guard/railtie"
-end
 
 module Sidekiq
   module TransactionGuard
@@ -27,11 +24,11 @@ module Sidekiq
       # inside of transactions.
       # * :warn - Log to Sidekiq.logger
       # * :stderr - Log to STDERR
-      # * :error - Throw a `Sidekiq::TransactionGuard::InsideTransactionError`
+      # * :error - Raise a `Sidekiq::TransactionGuard::InsideTransactionError`
       # * :disabled - Allow workers inside of transactions
       #
-      # @param mode [Symbol]
-      # @return [void]
+      # @param symbol [Symbol] one of `:warn`, `:stderr`, `:error`, or `:disabled`
+      # @return [Symbol] the mode that was set
       def mode=(symbol)
         if VALID_MODES.include?(symbol)
           @mode = symbol
@@ -49,6 +46,7 @@ module Sidekiq
       # job hash for all jobs enqueued inside transactions if the mode is `:warn`
       # or `:stderr`.
       #
+      # @yield [Hash] the Sidekiq job hash
       # @return [void]
       def notify(&block)
         @notify = block
@@ -56,17 +54,17 @@ module Sidekiq
 
       # Return the block set as the notify handler with a call to `notify`.
       #
-      # @return [Proc]
+      # @return [Proc, nil] the notify block, or nil if none has been set
       def notify_block
         @notify
       end
 
-      # Add a class that maintains it's own connection pool to the connections
+      # Add a class that maintains its own connection pool to the connections
       # being monitored for open transactions. You don't need to add `ActiveRecord::Base`
       # or subclasses. Only the base class that establishes a new connection pool
       # with a call to `establish_connection` needs to be added.
       #
-      # @param connection_class [Class]
+      # @param connection_class [Class] an ActiveRecord model class with its own connection pool
       # @return [void]
       def add_connection_class(connection_class)
         @lock.synchronize { @connection_classes << connection_class }
@@ -97,12 +95,19 @@ module Sidekiq
       # This method call needs to be wrapped around tests that use transactional fixtures.
       # It sets up data structures used to track the number of open transactions.
       #
+      # @param base_transaction_level [Integer, nil] optional base transaction level when using
+      #   transactional fixtures so that the transaction opened before the test setup code is run
+      #   can be ignored. This would normally be set to 1 if using transactional fixtures.
+      # @yield the test block to execute
       # @return [Object] the return value of the block
-      def testing(&block)
+      def testing(base_transaction_level: nil, &block)
         var = :sidekiq_rails_transaction_guard
         save_val = Thread.current[var]
         begin
           Thread.current[var] = (save_val ? save_val.dup : {})
+          if base_transaction_level
+            set_allowed_transaction_level(:all, base_transaction_level)
+          end
           yield
         ensure
           Thread.current[var] = save_val
@@ -111,10 +116,10 @@ module Sidekiq
 
       # This method needs to be called to set the allowed transaction level for a connection
       # class (see `add_connection_class` for more info). The current transaction level
-      # for that class' connection will be set as the zero point. This method can only
+      # for that class's connection will be set as the zero point. This method can only
       # be called inside a block wrapped with the `testing` method.
       #
-      # @param connection_classes [Class, Array<Class>, :all] the connection class to set the allowed
+      # @param connection_classes [Class, Array<Class>, Symbol] the connection class(es) to set the allowed
       #   transaction level for. If `:all` is provided, set the allowed transaction level
       #   for all connection classes set via `add_connection_class`.
       # @param count [Integer, nil] if provided, set the allowed transaction level to this
@@ -143,6 +148,10 @@ module Sidekiq
       end
     end
   end
+end
+
+if defined?(Rails::Railtie)
+  require_relative "transaction_guard/railtie"
 end
 
 # Configure the default transaction guard mode for known testing environments.
