@@ -12,5 +12,6 @@ gem "standard", "~> 1.0"
 gem "simplecov", require: false
 gem "yard"
 gem "activerecord", "~> 6.0.0"
+gem "logger"
 
 gemspec path: "../"

@@ -73,7 +73,7 @@ jobs:
       run: bundle exec rake
     - name: standardrb
       if:   matrix.standardrb == true
-      run:  bundle exec rake standard
+      run:  bundle exec standardrb --fail-level warning
     - name: yard
       if: matrix.yard
       run:  bundle exec yard --fail-on-warning

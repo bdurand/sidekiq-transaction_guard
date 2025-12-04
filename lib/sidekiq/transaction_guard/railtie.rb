@@ -3,7 +3,7 @@
 module Sidekiq::TransactionGuard
   class Railtie < ::Rails::Railtie
     initializer "sidekiq.transaction_guard" do
-      Sidekiq::TransactionGuard.mode = (Rails.env.development? || Rails.env.test? ? :error : :warn)
+      Sidekiq::TransactionGuard.mode = ((Rails.env.development? || Rails.env.test?) ? :error : :warn)
 
       Sidekiq.configure_client do |config|
         config.client_middleware do |chain|

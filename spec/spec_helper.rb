@@ -56,8 +56,6 @@ module Rails
       ActiveSupport::StringInquirer.new(@env)
     end
 
-    def env=(value)
-      @env = value
-    end
+    attr_writer :env
   end
 end
