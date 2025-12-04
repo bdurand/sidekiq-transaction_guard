@@ -47,3 +47,17 @@ class UnregisteredConnectionModel < ActiveRecord::Base
 end
 
 Sidekiq::TransactionGuard.add_connection_class(OtherConnectionModel)
+
+module Rails
+  @env = "test"
+
+  class << self
+    def env
+      ActiveSupport::StringInquirer.new(@env)
+    end
+
+    def env=(value)
+      @env = value
+    end
+  end
+end

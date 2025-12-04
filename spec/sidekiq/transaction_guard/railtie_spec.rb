@@ -1,5 +1,6 @@
 require "spec_helper"
-require "rails"
+
+require "rails/railtie"
 require "sidekiq/transaction_guard/railtie"
 
 RSpec.describe Sidekiq::TransactionGuard::Railtie do
