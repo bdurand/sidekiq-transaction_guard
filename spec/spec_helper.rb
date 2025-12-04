@@ -4,6 +4,7 @@ require "bundler/setup"
 require "sidekiq/transaction_guard"
 require "sidekiq/transaction_guard/rspec"
 
+require "logger" # Needed for Rails 6.0 compatibility
 require "active_record"
 
 Sidekiq.logger.level = :error
