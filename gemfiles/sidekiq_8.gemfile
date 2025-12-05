@@ -12,6 +12,5 @@ gem "standard", "~> 1.0"
 gem "simplecov", require: false
 gem "yard"
 gem "sidekiq", "~> 8.0"
-gem "activerecord", "~> 8.0"
 
 gemspec path: "../"
