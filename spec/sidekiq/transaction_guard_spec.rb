@@ -40,4 +40,33 @@ RSpec.describe Sidekiq::TransactionGuard do
       expect(Sidekiq::TransactionGuard.in_transaction?).to eq false
     end
   end
+
+  describe ".testing" do
+    it "can reset the allowed transaction levels in a block" do
+      TestModel.transaction do
+        expect(Sidekiq::TransactionGuard.in_transaction?).to eq true
+
+        Sidekiq::TransactionGuard.testing do
+          expect(Sidekiq::TransactionGuard.in_transaction?).to eq true
+
+          Sidekiq::TransactionGuard.set_allowed_transaction_level(:all)
+          expect(Sidekiq::TransactionGuard.in_transaction?).to eq false
+        end
+
+        expect(Sidekiq::TransactionGuard.in_transaction?).to eq true
+      end
+    end
+
+    it "can set a base transaction level to ignore outer transactions" do
+      TestModel.transaction do
+        expect(Sidekiq::TransactionGuard.in_transaction?).to eq true
+
+        Sidekiq::TransactionGuard.testing(base_transaction_level: 1) do
+          expect(Sidekiq::TransactionGuard.in_transaction?).to eq false
+        end
+
+        expect(Sidekiq::TransactionGuard.in_transaction?).to eq true
+      end
+    end
+  end
 end

@@ -66,20 +66,21 @@ module Sidekiq
 
       def log_transaction(worker_class, job)
         mode = worker_mode(job)
-        if mode != :disabled
-          message = "#{worker_class.name} was called from inside a database transaction"
-          if mode == :error
-            raise Sidekiq::TransactionGuard::InsideTransactionError.new(message)
-          else
-            logger = Sidekiq.logger unless mode == :stderr
-            if logger
-              logger.warn(message)
-            else
-              $stderr.write("WARNING #{message}\n")
-            end
-            notify!(worker_class, job)
-          end
+        return if mode == :disabled
+
+        message = "#{worker_class.name} was called from inside a database transaction"
+        if mode == :error
+          raise Sidekiq::TransactionGuard::InsideTransactionError.new(message)
         end
+
+        logger = Sidekiq.logger unless mode == :stderr
+        if logger
+          logger.warn(message)
+        else
+          $stderr.write("WARNING #{message}\n")
+        end
+
+        notify!(worker_class, job)
       end
     end
   end

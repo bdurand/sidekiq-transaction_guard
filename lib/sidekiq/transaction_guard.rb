@@ -105,9 +105,7 @@ module Sidekiq
         save_val = Thread.current[var]
         begin
           Thread.current[var] = (save_val ? save_val.dup : {})
-          if base_transaction_level
-            set_allowed_transaction_level(:all, base_transaction_level)
-          end
+          set_allowed_transaction_level(:all, base_transaction_level) if base_transaction_level
           yield
         ensure
           Thread.current[var] = save_val
@@ -122,12 +120,11 @@ module Sidekiq
       # @param connection_classes [Class, Array<Class>, Symbol] the connection class(es) to set the allowed
       #   transaction level for. If `:all` is provided, set the allowed transaction level
       #   for all connection classes set via `add_connection_class`.
-      # @param count [Integer, nil] if provided, set the allowed transaction level to this
-      #   value instead of the current transaction count. Use this if you cannot add the
-      #   hook in the correct spot in your test setup. ActiveRecord transactional fixtures
-      #   require this to be set while DatabaseCleaner will grab it dynamically.
+      # @param base_transaction_level [Integer] if provided, increment the allowed transaction level
+      #   by this amount. This is used when using transactional fixtures to ignore the transaction
+      #   opened within the test setup.
       # @return [void]
-      def set_allowed_transaction_level(connection_classes, count = nil)
+      def set_allowed_transaction_level(connection_classes, base_transaction_level = 0)
         connection_counts = Thread.current[:sidekiq_rails_transaction_guard]
         unless connection_counts
           raise("set_allowed_transaction_level is only allowed inside a testing block")
@@ -135,7 +132,7 @@ module Sidekiq
 
         connection_classes = self.connection_classes if connection_classes == :all
         Array(connection_classes).each do |connection_class|
-          class_count = count || connection_class.connection.open_transactions
+          class_count = connection_class.connection.open_transactions + base_transaction_level
           connection_counts[connection_class.name] = class_count
         end
       end
