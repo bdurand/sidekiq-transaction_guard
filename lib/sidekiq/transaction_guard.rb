@@ -95,17 +95,17 @@ module Sidekiq
       # This method call needs to be wrapped around tests that use transactional fixtures.
       # It sets up data structures used to track the number of open transactions.
       #
-      # @param base_transaction_level [Integer, nil] optional base transaction level when using
+      # @param base_transaction_level [Integer] optional base transaction level when using
       #   transactional fixtures so that the transaction opened before the test setup code is run
       #   can be ignored. This would normally be set to 1 if using transactional fixtures.
       # @yield the test block to execute
       # @return [Object] the return value of the block
-      def testing(base_transaction_level: nil, &block)
+      def testing(base_transaction_level: 0, &block)
         var = :sidekiq_rails_transaction_guard
         save_val = Thread.current[var]
         begin
           Thread.current[var] = (save_val ? save_val.dup : {})
-          set_allowed_transaction_level(:all, base_transaction_level) if base_transaction_level
+          set_allowed_transaction_level(:all, base_transaction_level)
           yield
         ensure
           Thread.current[var] = save_val

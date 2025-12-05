@@ -47,9 +47,6 @@ RSpec.describe Sidekiq::TransactionGuard do
         expect(Sidekiq::TransactionGuard.in_transaction?).to eq true
 
         Sidekiq::TransactionGuard.testing do
-          expect(Sidekiq::TransactionGuard.in_transaction?).to eq true
-
-          Sidekiq::TransactionGuard.set_allowed_transaction_level(:all)
           expect(Sidekiq::TransactionGuard.in_transaction?).to eq false
         end
 

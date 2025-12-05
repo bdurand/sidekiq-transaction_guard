@@ -22,7 +22,7 @@ RSpec.configure do |config|
     save_val = Sidekiq::TransactionGuard.mode
     begin
       Sidekiq::TransactionGuard.mode = mode
-      transaction_level = 1 if respond_to?(:use_transactional_tests) && use_transactional_tests
+      transaction_level = (respond_to?(:use_transactional_tests) && use_transactional_tests) ? 1 : 0
       Sidekiq::TransactionGuard.testing(base_transaction_level: transaction_level) do
         example.run
       end
