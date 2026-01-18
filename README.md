@@ -70,11 +70,7 @@ For non-Rails applications, you need to manually add the middleware in your appl
 ```ruby
 require 'sidekiq/transaction_guard'
 
-Sidekiq.configure_client do |config|
-  config.client_middleware do |chain|
-    chain.add(Sidekiq::TransactionGuard::Middleware)
-  end
-end
+Sidekiq::TransactionGuard::Middleware.init
 ```
 
 ### Mode
@@ -93,6 +89,12 @@ Sidekiq::TransactionGuard.mode = :warn
 
 # Disable entirely
 Sidekiq::TransactionGuard.mode = :disabled
+```
+
+You can set the mode when initializing the middleware:
+
+```ruby
+Sidekiq::TransactionGuard::Middleware.init(mode: :error)
 ```
 
 You can also set the mode on individual worker classes with `sidekiq_options transaction_guard: mode`. The worker-specific mode will override the global mode.
@@ -195,12 +197,32 @@ This will add the appropriate code so that the surrounding transaction in the te
 
 ### Minitest Support
 
-You can use the `minitest-hooks` gem to add around hooks to wrap your tests with the `testing` block.
+If you're using Minitest with `ActiveSupport::TestCase` (Rails default), you can use the built-in Minitest helper to automatically set up the hooks for transactional fixtures. Add this line to your `test_helper.rb` file:
 
 ```ruby
-class MyTests < ActiveSupport::TestCase
+require 'sidekiq/transaction_guard/minitest'
+```
+
+This will automatically wrap each test in the appropriate `testing` block and handle transactional fixtures.
+
+If you're using plain Minitest (without `ActiveSupport::TestCase`), you can manually include the helper module:
+
+```ruby
+class MyTests < Minitest::Test
+  include Sidekiq::TransactionGuard::MinitestHelper
+
+  def test_something
+    # Test code here
+  end
+end
+```
+
+Alternatively, you can manually use the `testing` method with minitest-hooks:
+
+```ruby
+class MyTests < Minitest::Test
   # Using minitest-hooks gem
-  around do |&block|
+  def around(&block)
     Sidekiq::TransactionGuard.testing(base_transaction_level: 1) do
       block.call
     end

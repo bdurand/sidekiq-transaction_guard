@@ -3,6 +3,39 @@
 require "spec_helper"
 
 RSpec.describe Sidekiq::TransactionGuard do
+  describe ".init" do
+    around do |example|
+      mode = Sidekiq::TransactionGuard.mode
+      begin
+        # Reset Sidekiq middleware
+        Sidekiq.configure_client do |config|
+          config.client_middleware.clear
+        end
+        example.run
+      ensure
+        Sidekiq::TransactionGuard.mode = mode
+      end
+    end
+
+    it "adds the middleware to Sidekiq client middleware" do
+      Sidekiq::TransactionGuard.init
+
+      chain = nil
+      Sidekiq.configure_client do |config|
+        chain = config.client_middleware
+      end
+      expect(chain.include?(Sidekiq::TransactionGuard::Middleware)).to be(true)
+
+      expect(Sidekiq::TransactionGuard.mode).to eq(:error)
+    end
+
+    it "sets the mode if provided" do
+      Sidekiq::TransactionGuard.init(mode: :warn)
+
+      expect(Sidekiq::TransactionGuard.mode).to eq(:warn)
+    end
+  end
+
   describe "mode" do
     it "should default to :warn and be able to be set to :error", sidekiq_transaction_guard: :default do
       mode = Sidekiq::TransactionGuard.mode

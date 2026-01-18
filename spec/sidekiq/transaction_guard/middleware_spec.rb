@@ -74,7 +74,7 @@ RSpec.describe Sidekiq::TransactionGuard::Middleware do
     end
   end
 
-  describe "inside a transaciton with mode :warn" do
+  describe "inside a transaction with mode :warn" do
     let(:log) { StringIO.new }
     let(:logger) { Logger.new(log) }
 

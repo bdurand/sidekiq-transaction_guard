@@ -19,6 +19,21 @@ module Sidekiq
     class << self
       VALID_MODES = [:warn, :stderr, :error, :disabled].freeze
 
+      # Helper method to add the client middleware to Sidekiq.
+      #
+      # @return [void]
+      def init(mode: nil)
+        self.mode = mode if mode
+
+        Sidekiq.configure_client do |config|
+          config.client_middleware do |chain|
+            unless chain.include?(Sidekiq::TransactionGuard::Middleware)
+              chain.add Sidekiq::TransactionGuard::Middleware
+            end
+          end
+        end
+      end
+
       # Set the global mode to one of `[:warn, :stderr, :error, :disabled]`. The
       # default mode is `:warn`. This controls the behavior of workers enqueued
       # inside of transactions.
@@ -100,7 +115,7 @@ module Sidekiq
       #   can be ignored. This would normally be set to 1 if using transactional fixtures.
       # @yield the test block to execute
       # @return [Object] the return value of the block
-      def testing(base_transaction_level: 0, &block)
+      def testing(base_transaction_level: 0)
         var = :sidekiq_rails_transaction_guard
         save_val = Thread.current[var]
         begin

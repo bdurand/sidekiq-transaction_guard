@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added `count` parameter to `set_allowed_transaction_level` to allow setting the allowed transaction level explicitly. This is useful for test setups where the transaction level cannot be determined automatically, such as when using ActiveRecord transactional fixtures.
 - Added Railtie for automatic integration with Rails applications.
 - Added helpers for easier testing setup with RSpec.
+- Added `Sidekiq::TransactionGuard::Middleware.init` method to simplify middleware initialization.
+- Added minitest helper module for easier integration with Minitest test suites.
 
 ### Removed
 
