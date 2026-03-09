@@ -42,6 +42,7 @@ end
 
 appraise "sidekiq_7" do
   gem "sidekiq", "~> 7.0"
+  gem "sqlite3", "~> 1.4.0"
 end
 
 appraise "sidekiq_6" do
