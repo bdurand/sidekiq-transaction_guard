@@ -24,7 +24,7 @@ RSpec.describe Sidekiq::TransactionGuard do
       Sidekiq.configure_client do |config|
         chain = config.client_middleware
       end
-      expect(chain.include?(Sidekiq::TransactionGuard::Middleware)).to be(true)
+      expect(chain.exists?(Sidekiq::TransactionGuard::Middleware)).to be(true)
 
       expect(Sidekiq::TransactionGuard.mode).to eq(:error)
     end
