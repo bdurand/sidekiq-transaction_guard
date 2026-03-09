@@ -22,12 +22,17 @@ RSpec.configure do |config|
     save_val = Sidekiq::TransactionGuard.mode
     begin
       Sidekiq::TransactionGuard.mode = mode
-      transaction_level = (respond_to?(:use_transactional_tests) && use_transactional_tests) ? 1 : 0
-      Sidekiq::TransactionGuard.testing(base_transaction_level: transaction_level) do
+      Sidekiq::TransactionGuard.testing do
         example.run
       end
     ensure
       Sidekiq::TransactionGuard.mode = save_val
     end
+  end
+
+  # Re-snapshot the allowed transaction level after all setup (including
+  # transactional fixtures) has run so that setup transactions are ignored.
+  config.before(:each) do
+    Sidekiq::TransactionGuard.set_allowed_transaction_level(:all)
   end
 end

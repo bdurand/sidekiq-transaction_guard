@@ -28,6 +28,7 @@ module Sidekiq
         Sidekiq.configure_client do |config|
           config.client_middleware do |chain|
             unless chain.include?(Sidekiq::TransactionGuard::Middleware)
+              puts "adding Sidekiq::TransactionGuard::Middleware to Sidekiq client middleware chain"
               chain.add Sidekiq::TransactionGuard::Middleware
             end
           end
@@ -109,18 +110,17 @@ module Sidekiq
 
       # This method call needs to be wrapped around tests that use transactional fixtures.
       # It sets up data structures used to track the number of open transactions.
+      # The current transaction level is automatically captured as the baseline so that
+      # any transactions opened by test setup (e.g. transactional fixtures) are ignored.
       #
-      # @param base_transaction_level [Integer] optional base transaction level when using
-      #   transactional fixtures so that the transaction opened before the test setup code is run
-      #   can be ignored. This would normally be set to 1 if using transactional fixtures.
       # @yield the test block to execute
       # @return [Object] the return value of the block
-      def testing(base_transaction_level: 0)
+      def testing
         var = :sidekiq_rails_transaction_guard
         save_val = Thread.current[var]
         begin
           Thread.current[var] = (save_val ? save_val.dup : {})
-          set_allowed_transaction_level(:all, base_transaction_level)
+          set_allowed_transaction_level(:all)
           yield
         ensure
           Thread.current[var] = save_val

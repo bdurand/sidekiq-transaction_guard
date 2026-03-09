@@ -87,15 +87,13 @@ RSpec.describe Sidekiq::TransactionGuard do
       end
     end
 
-    it "can set a base transaction level to ignore outer transactions" do
+    it "automatically captures the current transaction level as the base" do
       TestModel.transaction do
-        expect(Sidekiq::TransactionGuard.in_transaction?).to eq true
-
-        Sidekiq::TransactionGuard.testing(base_transaction_level: 1) do
-          expect(Sidekiq::TransactionGuard.in_transaction?).to eq false
+        OtherConnectionModel.transaction do
+          Sidekiq::TransactionGuard.testing do
+            expect(Sidekiq::TransactionGuard.in_transaction?).to eq false
+          end
         end
-
-        expect(Sidekiq::TransactionGuard.in_transaction?).to eq true
       end
     end
   end

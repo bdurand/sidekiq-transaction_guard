@@ -26,10 +26,8 @@ module Sidekiq
 
           def setup
             @sidekiq_transaction_guard_saved_mode = Sidekiq::TransactionGuard.mode
-            mode = :error
-            transaction_level = (respond_to?(:use_transactional_tests) && use_transactional_tests) ? 1 : 0
-            Sidekiq::TransactionGuard.mode = mode
-            Sidekiq::TransactionGuard.testing(base_transaction_level: transaction_level) do
+            Sidekiq::TransactionGuard.mode = :error
+            Sidekiq::TransactionGuard.testing do
               @sidekiq_transaction_guard_testing_block = true
               super
             end
@@ -50,11 +48,9 @@ if defined?(ActiveSupport::TestCase)
   ActiveSupport::TestCase.class_eval do
     def setup
       @sidekiq_transaction_guard_saved_mode = Sidekiq::TransactionGuard.mode
-      mode = :error
-      transaction_level = (respond_to?(:use_transactional_tests) && use_transactional_tests) ? 1 : 0
-      Sidekiq::TransactionGuard.mode = mode
+      Sidekiq::TransactionGuard.mode = :error
 
-      Sidekiq::TransactionGuard.testing(base_transaction_level: transaction_level) do
+      Sidekiq::TransactionGuard.testing do
         super
       end
     end
