@@ -38,10 +38,13 @@ end
 
 appraise "sidekiq_8" do
   gem "sidekiq", "~> 8.0"
+  gem "activerecord", "~> 8.0.0"
 end
 
 appraise "sidekiq_7" do
   gem "sidekiq", "~> 7.0"
+  gem "activerecord", "~> 7.1.0"
+  gem "sqlite3", "~> 1.4.0"
 end
 
 appraise "sidekiq_6" do
