@@ -44,8 +44,6 @@ jobs:
             appraisal: "sidekiq_7"
           - ruby: "2.7"
             appraisal: "sidekiq_6"
-    env:
-      BUNDLE_GEMFILE: ${{ matrix.gemfile }}
     steps:
     - uses: actions/checkout@v4
     - name: Set up Ruby ${{ matrix.ruby }}
