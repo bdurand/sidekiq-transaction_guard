@@ -10,7 +10,7 @@ end
 
 require "sidekiq/transaction_guard/database_cleaner"
 
-describe Sidekiq::TransactionGuard::DatabaseCleaner do
+RSpec.describe Sidekiq::TransactionGuard::DatabaseCleaner do
   it "should not count the wrapping transaction in determining if a transaction is open" do
     DatabaseCleaner.strategy = :transaction
     DatabaseCleaner.cleaning do

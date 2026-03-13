@@ -3,13 +3,14 @@
 source "https://rubygems.org"
 
 gem "database_cleaner-active_record"
-gem "sqlite3", "~> 1.4"
+gem "sqlite3", "~> 1.4.0"
+gem "railties"
 gem "dotenv"
 gem "rspec", "~> 3.10"
 gem "appraisal"
 gem "standard", "~> 1.0"
 gem "simplecov", require: false
 gem "yard"
-gem "sidekiq", "~> 5.0"
+gem "activerecord", "~> 7.2.0"
 
 gemspec path: "../"

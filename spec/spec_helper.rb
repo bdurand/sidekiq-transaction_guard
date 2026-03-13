@@ -1,17 +1,21 @@
 # frozen_string_literal: true
 
 require "bundler/setup"
+require "logger" # Needed for Rails 6.0 compatibility
+
 require "sidekiq/transaction_guard"
+require "sidekiq/transaction_guard/rspec"
 
 require "active_record"
 
-RSpec.configure do |config|
-  # Enable flags like --only-failures and --next-failure
-  config.example_status_persistence_file_path = ".rspec_status"
+Sidekiq.logger.level = :error
 
-  config.expect_with :rspec do |c|
-    c.syntax = :expect
-  end
+RSpec.configure do |config|
+  config.warnings = true
+  config.disable_monkey_patching!
+  config.default_formatter = "doc" if config.files_to_run.one?
+  config.order = :random
+  Kernel.srand config.seed
 end
 
 ActiveRecord::Base.establish_connection("adapter" => "sqlite3", "database" => ":memory:")
@@ -45,3 +49,15 @@ class UnregisteredConnectionModel < ActiveRecord::Base
 end
 
 Sidekiq::TransactionGuard.add_connection_class(OtherConnectionModel)
+
+module Rails
+  @env = "test"
+
+  class << self
+    def env
+      ActiveSupport::StringInquirer.new(@env)
+    end
+
+    attr_writer :env
+  end
+end

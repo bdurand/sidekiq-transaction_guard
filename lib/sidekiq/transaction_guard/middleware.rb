@@ -10,9 +10,7 @@ module Sidekiq
     # the default behavior set in `Sidekiq::TransactionGuard.mode` and
     # `Sidekiq::TransactionGuard.notify` respectively.
     class Middleware
-      if Gem::Version.new(Sidekiq::VERSION) >= Gem::Version.new("7.0")
-        include Sidekiq::ClientMiddleware
-      end
+      include Sidekiq::ClientMiddleware if defined?(Sidekiq::ClientMiddleware)
 
       def call(worker_class, job, queue, redis_pool)
         # Check if we need to log this. Also, convert worker_class to its actual class
@@ -66,20 +64,23 @@ module Sidekiq
 
       def log_transaction(worker_class, job)
         mode = worker_mode(job)
-        if mode != :disabled
-          message = "#{worker_class.name} was called from inside a database transaction"
-          if mode == :error
-            raise Sidekiq::TransactionGuard::InsideTransactionError.new(message)
-          else
-            logger = Sidekiq.logger unless mode == :stderr
-            if logger
-              logger.warn(message)
-            else
-              $stderr.write("WARNING #{message}\n")
-            end
-            notify!(worker_class, job)
-          end
+        return if mode == :disabled
+
+        message = "#{worker_class.name} was called from inside a database transaction. " \
+          "Resolve by moving the job outside the transaction, using an after_commit callback, " \
+          "or setting `sidekiq_options transaction_guard: :disabled` if the job is safe to run before the transaction commits."
+        if mode == :error
+          raise Sidekiq::TransactionGuard::InsideTransactionError.new(message)
         end
+
+        logger = Sidekiq.logger unless mode == :stderr
+        if logger
+          logger.warn(message)
+        else
+          $stderr.write("WARNING #{message}\n")
+        end
+
+        notify!(worker_class, job)
       end
     end
   end
