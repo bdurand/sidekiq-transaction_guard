@@ -107,6 +107,21 @@ module Sidekiq
         end
       end
 
+      # Disable the transaction guard within the provided block. This is useful in test environments when you want to
+      # setup data for your tests without worrying about transaction levels.
+      #
+      # @yield the block to execute with the transaction guard disabled
+      # @return [Object] the return value of the block
+      def disable
+        save_mode = mode
+        begin
+          self.mode = :disabled
+          yield
+        ensure
+          self.mode = save_mode
+        end
+      end
+
       # This method call needs to be wrapped around tests that use transactional fixtures.
       # It sets up data structures used to track the number of open transactions.
       # The current transaction level is automatically captured as the baseline so that

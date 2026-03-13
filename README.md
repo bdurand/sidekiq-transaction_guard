@@ -159,7 +159,7 @@ Sidekiq::TransactionGuard.add_connection_class(MyClass)
 
 The class is used to get to the connection pool used for the class. You only need to add one class per connection pool, so you don't need to add any subclasses of `MyClass`.
 
-## Transaction Fixtures In Tests
+## Transactional Fixtures In Tests
 
 If you're using transaction fixtures in your tests, there will always be a database transaction open.
 
@@ -227,6 +227,16 @@ class MyTests < Minitest::Test
       block.call
     end
   end
+end
+```
+
+### Disabling When Setting Up Test Data
+
+If you have test setup code that is triggering the transaction guard with false positives, you can temporarily disable the transaction guard within a block:
+
+```ruby
+Sidekiq::TransactionGuard.disable do
+  # Code that schedules workers inside transactions, such as test setup code.
 end
 ```
 

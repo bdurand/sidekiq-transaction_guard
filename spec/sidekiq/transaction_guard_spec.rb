@@ -74,6 +74,18 @@ RSpec.describe Sidekiq::TransactionGuard do
     end
   end
 
+  describe ".disable" do
+    it "should disable transaction guarding within the block" do
+      Sidekiq::TransactionGuard.disable do
+        expect(Sidekiq::TransactionGuard.mode).to eq :disabled
+        Sidekiq::TransactionGuard.testing do
+          expect(Sidekiq::TransactionGuard.mode).to eq :disabled
+        end
+      end
+      expect(Sidekiq::TransactionGuard.mode).to eq :error
+    end
+  end
+
   describe ".testing" do
     it "can reset the allowed transaction levels in a block" do
       TestModel.transaction do
