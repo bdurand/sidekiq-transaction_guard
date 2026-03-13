@@ -27,7 +27,7 @@ module Sidekiq
 
         Sidekiq.configure_client do |config|
           config.client_middleware do |chain|
-            unless chain.include?(Sidekiq::TransactionGuard::Middleware)
+            unless chain.exists?(Sidekiq::TransactionGuard::Middleware)
               chain.add Sidekiq::TransactionGuard::Middleware
             end
           end
