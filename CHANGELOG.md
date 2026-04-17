@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.1.1
+
+### Changed
+
+- Refactored the RSpec helper to set the transaction guard mode to :disabled during setup and teardown, and only set it to the desired mode during the example execution. This ensures that setup and teardown transactions are ignored by the transaction guard, while still allowing tests to specify their desired mode for the duration of the example.
+- Disable transaction guard when running tests in inline mode since since inline mode is not compatible with the transaction guard and will cause all tests to fail.
+
 ## 1.1.0
 
 ### Added

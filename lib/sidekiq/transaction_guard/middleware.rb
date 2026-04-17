@@ -14,7 +14,7 @@ module Sidekiq
 
       def call(worker_class, job, queue, redis_pool)
         # Check if we need to log this. Also, convert worker_class to its actual class
-        if in_transaction?
+        if in_transaction? && !sidekiq_inline?
           worker_class = worker_class.constantize if worker_class.is_a?(String)
           log_transaction(worker_class, job)
         end
@@ -29,6 +29,10 @@ module Sidekiq
 
       def in_transaction?
         Sidekiq::TransactionGuard.in_transaction?
+      end
+
+      def sidekiq_inline?
+        defined?(Sidekiq::Testing) && Sidekiq::Testing.inline?
       end
 
       def notify_block(job)
