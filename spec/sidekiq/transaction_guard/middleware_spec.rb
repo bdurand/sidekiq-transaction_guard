@@ -74,22 +74,12 @@ RSpec.describe Sidekiq::TransactionGuard::Middleware do
     end
   end
 
-  describe "inside a transaction with mode :warn" do
+  describe "inside a transaction with mode :warn", sidekiq_transaction_guard: :warn do
     let(:log) { StringIO.new }
     let(:logger) { Logger.new(log) }
 
     before(:each) do
       allow(Sidekiq).to receive(:logger).and_return(logger)
-    end
-
-    around(:each) do |example|
-      save_mode = Sidekiq::TransactionGuard.mode
-      begin
-        Sidekiq::TransactionGuard.mode = :warn
-        example.call
-      ensure
-        Sidekiq::TransactionGuard.mode = save_mode
-      end
     end
 
     it "should log jobs being scheduled inside of a transaction" do
@@ -116,17 +106,7 @@ RSpec.describe Sidekiq::TransactionGuard::Middleware do
     end
   end
 
-  describe "inside a transaction with mode :stderr" do
-    around(:each) do |example|
-      save_mode = Sidekiq::TransactionGuard.mode
-      begin
-        Sidekiq::TransactionGuard.mode = :stderr
-        example.call
-      ensure
-        Sidekiq::TransactionGuard.mode = save_mode
-      end
-    end
-
+  describe "inside a transaction with mode :stderr", sidekiq_transaction_guard: :stderr do
     around(:each) do |example|
       stream = $stderr
       begin
@@ -146,7 +126,7 @@ RSpec.describe Sidekiq::TransactionGuard::Middleware do
     end
 
     it "should log to STDERR jobs being scheduled inside of a transaction if there is no logger" do
-      Sidekiq::TransactionGuard.mode = :warn
+      Sidekiq::TransactionGuard.thread_local_mode = :warn
       allow(Sidekiq).to receive(:logger).and_return(nil)
       TestModel.transaction do
         TestWorker.perform_async
@@ -156,17 +136,7 @@ RSpec.describe Sidekiq::TransactionGuard::Middleware do
     end
   end
 
-  describe "inside a transaction with mode :error" do
-    around(:each) do |example|
-      save_mode = Sidekiq::TransactionGuard.mode
-      begin
-        Sidekiq::TransactionGuard.mode = :error
-        example.call
-      ensure
-        Sidekiq::TransactionGuard.mode = save_mode
-      end
-    end
-
+  describe "inside a transaction with mode :error", sidekiq_transaction_guard: :error do
     it "should raise an error if job is scheduled inside of a transaction" do
       TestModel.transaction do
         expect { TestWorker.perform_async }.to raise_error(Sidekiq::TransactionGuard::InsideTransactionError)

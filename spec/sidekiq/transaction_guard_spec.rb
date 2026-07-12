@@ -5,7 +5,7 @@ require "spec_helper"
 RSpec.describe Sidekiq::TransactionGuard do
   describe ".init" do
     around do |example|
-      mode = Sidekiq::TransactionGuard.mode
+      mode = Sidekiq::TransactionGuard.default_mode
       begin
         # Reset Sidekiq middleware
         Sidekiq.configure_client do |config|
@@ -14,10 +14,15 @@ RSpec.describe Sidekiq::TransactionGuard do
         example.run
       ensure
         Sidekiq::TransactionGuard.mode = mode
+        Sidekiq.configure_client do |config|
+          config.client_middleware.clear
+        end
       end
     end
 
-    it "adds the middleware to Sidekiq client middleware" do
+    it "adds the middleware to Sidekiq client middleware without changing the mode" do
+      mode = Sidekiq::TransactionGuard.default_mode
+
       Sidekiq::TransactionGuard.init
 
       chain = nil
@@ -26,13 +31,25 @@ RSpec.describe Sidekiq::TransactionGuard do
       end
       expect(chain.exists?(Sidekiq::TransactionGuard::Middleware)).to be(true)
 
-      expect(Sidekiq::TransactionGuard.mode).to eq(:error)
+      expect(Sidekiq::TransactionGuard.default_mode).to eq(mode)
+    end
+
+    it "adds the client middleware to the server configuration" do
+      allow(Sidekiq).to receive(:server?).and_return(true)
+
+      Sidekiq::TransactionGuard.init
+
+      chain = nil
+      Sidekiq.configure_server do |config|
+        chain = config.client_middleware
+      end
+      expect(chain.exists?(Sidekiq::TransactionGuard::Middleware)).to be(true)
     end
 
     it "sets the mode if provided" do
-      Sidekiq::TransactionGuard.init(mode: :warn)
+      Sidekiq::TransactionGuard.init(mode: :stderr)
 
-      expect(Sidekiq::TransactionGuard.mode).to eq(:warn)
+      expect(Sidekiq::TransactionGuard.default_mode).to eq(:stderr)
     end
   end
 
@@ -46,6 +63,29 @@ RSpec.describe Sidekiq::TransactionGuard do
       ensure
         Sidekiq::TransactionGuard.mode = mode
       end
+    end
+
+    it "should not allow invalid modes" do
+      expect { Sidekiq::TransactionGuard.mode = :bogus }.to raise_error(ArgumentError)
+    end
+  end
+
+  describe "thread_local_mode" do
+    it "overrides the global mode only in the current thread", sidekiq_transaction_guard: :default do
+      expect(Sidekiq::TransactionGuard.mode).to eq :warn
+      begin
+        Sidekiq::TransactionGuard.thread_local_mode = :stderr
+        expect(Sidekiq::TransactionGuard.mode).to eq :stderr
+        expect(Sidekiq::TransactionGuard.default_mode).to eq :warn
+        expect(Thread.new { Sidekiq::TransactionGuard.mode }.value).to eq :warn
+      ensure
+        Sidekiq::TransactionGuard.thread_local_mode = nil
+      end
+      expect(Sidekiq::TransactionGuard.mode).to eq :warn
+    end
+
+    it "should not allow invalid modes" do
+      expect { Sidekiq::TransactionGuard.thread_local_mode = :bogus }.to raise_error(ArgumentError)
     end
   end
 
@@ -83,6 +123,13 @@ RSpec.describe Sidekiq::TransactionGuard do
         end
       end
       expect(Sidekiq::TransactionGuard.mode).to eq :error
+    end
+
+    it "should not disable transaction guarding in other threads", sidekiq_transaction_guard: :default do
+      Sidekiq::TransactionGuard.disable do
+        expect(Sidekiq::TransactionGuard.mode).to eq :disabled
+        expect(Thread.new { Sidekiq::TransactionGuard.mode }.value).to eq :warn
+      end
     end
   end
 

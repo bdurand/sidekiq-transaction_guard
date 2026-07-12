@@ -70,8 +70,10 @@ For non-Rails applications, you need to manually add the middleware in your appl
 ```ruby
 require 'sidekiq/transaction_guard'
 
-Sidekiq::TransactionGuard::Middleware.init
+Sidekiq::TransactionGuard.init
 ```
+
+This registers the client middleware for both client processes and the Sidekiq server process, so jobs enqueued from within other jobs are checked as well.
 
 ### Mode
 
@@ -94,7 +96,13 @@ Sidekiq::TransactionGuard.mode = :disabled
 You can set the mode when initializing the middleware:
 
 ```ruby
-Sidekiq::TransactionGuard::Middleware.init(mode: :error)
+Sidekiq::TransactionGuard.init(mode: :error)
+```
+
+You can also override the mode for the current thread only. This does not affect jobs being enqueued concurrently in other threads. Set it to `nil` to remove the override.
+
+```ruby
+Sidekiq::TransactionGuard.thread_local_mode = :disabled
 ```
 
 You can also set the mode on individual worker classes with `sidekiq_options transaction_guard: mode`. The worker-specific mode will override the global mode.
@@ -175,7 +183,9 @@ If you're using RSpec, you can use the built-in RSpec helper to automatically se
 require 'sidekiq/transaction_guard/rspec'
 ```
 
-This will also add support for adding a metadata tag to your specs to control the transaction guard mode on a per-spec basis. For example:
+Require this file after `rspec-rails` (or anything else that opens transactions in its setup hooks) so that the transaction level snapshot is taken after those transactions are opened.
+
+Examples run with the `:error` mode by default. You can control the mode on a per-spec basis with a metadata tag. The value can be a mode symbol, `false` to disable the guard, or `:default` to use the globally configured mode. For example:
 
 ```ruby
 RSpec.describe "Some feature", sidekiq_transaction_guard: :disabled do
@@ -203,7 +213,7 @@ If you're using Minitest with `ActiveSupport::TestCase` (Rails default), you can
 require 'sidekiq/transaction_guard/minitest'
 ```
 
-This will automatically wrap each test in the appropriate `testing` block and handle transactional fixtures.
+Tests run with the `:error` mode. The guard is disabled while `setup do` callbacks and teardown hooks run, and the transaction level snapshot is taken after all other setup hooks (including transactional fixtures) have completed.
 
 If you're using plain Minitest (without `ActiveSupport::TestCase`), you can manually include the helper module:
 
@@ -223,7 +233,7 @@ Alternatively, you can manually use the `testing` method with minitest-hooks:
 class MyTests < Minitest::Test
   # Using minitest-hooks gem
   def around(&block)
-    Sidekiq::TransactionGuard.testing(base_transaction_level: 1) do
+    Sidekiq::TransactionGuard.testing do
       block.call
     end
   end
@@ -239,6 +249,8 @@ Sidekiq::TransactionGuard.disable do
   # Code that schedules workers inside transactions, such as test setup code.
 end
 ```
+
+The guard is only disabled for the current thread, so jobs enqueued concurrently in other threads are still checked.
 
 ## Installation
 
