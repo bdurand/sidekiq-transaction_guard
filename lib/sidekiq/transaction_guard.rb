@@ -59,14 +59,14 @@ module Sidekiq
       #
       # @return [Symbol]
       def mode
-        thread_local_mode || @mode
+        thread_local_mode || default_mode
       end
 
       # Return the globally configured mode, ignoring any thread local override.
       #
       # @return [Symbol]
       def default_mode
-        @mode
+        @lock.synchronize { @mode }
       end
 
       # Set a mode override for the current thread only. This is used by `disable`
@@ -105,7 +105,7 @@ module Sidekiq
       #
       # @return [Proc, nil] the notify block, or nil if none has been set
       def notify_block
-        @notify
+        @lock.synchronize { @notify }
       end
 
       # Add a class that maintains its own connection pool to the connections
@@ -168,6 +168,7 @@ module Sidekiq
       def testing
         saved_state = begin_testing
         begin
+          set_allowed_transaction_level(:all)
           yield
         ensure
           end_testing(saved_state)
@@ -180,18 +181,17 @@ module Sidekiq
       # can be used. The returned state must be passed to `end_testing` when the
       # test finishes.
       #
+      # This method only allocates the transaction tracking state; it does not
+      # capture a transaction level baseline. The caller is responsible for calling
+      # `set_allowed_transaction_level` once any setup that opens transactions
+      # (e.g. transactional fixtures) has run.
+      #
       # @api private
       # @return [Object] opaque saved state to pass to `end_testing`
       def begin_testing
         var = :sidekiq_rails_transaction_guard
         saved_state = Thread.current[var]
-        begin
-          Thread.current[var] = (saved_state ? saved_state.dup : {})
-          set_allowed_transaction_level(:all)
-        rescue Exception # rubocop:disable Lint/RescueException
-          Thread.current[var] = saved_state
-          raise
-        end
+        Thread.current[var] = (saved_state ? saved_state.dup : {})
         saved_state
       end
 

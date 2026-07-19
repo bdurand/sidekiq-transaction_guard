@@ -21,6 +21,10 @@ module Sidekiq
     # @api private
     module RSpecIntegration
       def self.included(example_group)
+        # Nested example groups inherit hooks from their parent group, so only
+        # register the hooks on the outermost group that includes this module.
+        return if example_group.is_a?(Class) && example_group.superclass.include?(RSpecIntegration)
+
         # These are registered as group level hooks so they run after hooks added
         # by modules included earlier — in particular after rspec-rails has opened
         # the transactional fixture transaction — so the snapshot taken here
