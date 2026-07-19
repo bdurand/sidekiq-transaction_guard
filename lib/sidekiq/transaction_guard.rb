@@ -19,10 +19,12 @@ module Sidekiq
     class << self
       VALID_MODES = [:warn, :stderr, :error, :disabled].freeze
 
-      # Helper method to add the client middleware to Sidekiq. The middleware is
-      # added to both the client and server configurations since jobs can also be
-      # enqueued from within other jobs running in the Sidekiq server process.
+      # Initialize Sidekiq::TransactionGuard by adding its client middleware to
+      # Sidekiq. The middleware is added to both the client and server
+      # configurations since jobs can also be enqueued from within other jobs
+      # running in the Sidekiq server process.
       #
+      # @param mode [Symbol, nil] optionally set the global mode (see `mode=`)
       # @return [void]
       def init(mode: nil)
         self.mode = mode if mode
