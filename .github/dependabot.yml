@@ -4,9 +4,13 @@ updates:
   - package-ecosystem: bundler
     directory: "/"
     schedule:
-      interval: weekly
+      interval: daily
     allow:
       # Automatically keep all runtime dependencies updated
       - dependency-name: "*"
         dependency-type: "production"
     versioning-strategy: lockfile-only
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
