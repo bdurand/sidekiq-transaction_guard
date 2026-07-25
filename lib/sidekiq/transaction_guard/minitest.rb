@@ -62,5 +62,7 @@ end
 
 # If using ActiveSupport::TestCase, automatically include the helper.
 if defined?(ActiveSupport::TestCase)
-  ActiveSupport::TestCase.include(Sidekiq::TransactionGuard::MinitestHelper)
+  # Included with `send` so that YARD doesn't try to statically resolve the
+  # ActiveSupport::TestCase namespace when generating documentation.
+  ActiveSupport::TestCase.send(:include, Sidekiq::TransactionGuard::MinitestHelper)
 end
