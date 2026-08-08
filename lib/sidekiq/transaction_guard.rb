@@ -19,18 +19,22 @@ module Sidekiq
     class << self
       VALID_MODES = [:warn, :stderr, :error, :disabled].freeze
 
-      # Helper method to add the client middleware to Sidekiq.
+      # Initialize Sidekiq::TransactionGuard by adding its client middleware to
+      # Sidekiq. The middleware is added to both the client and server
+      # configurations since jobs can also be enqueued from within other jobs
+      # running in the Sidekiq server process.
       #
+      # @param mode [Symbol, nil] optionally set the global mode (see `mode=`)
       # @return [void]
       def init(mode: nil)
         self.mode = mode if mode
 
         Sidekiq.configure_client do |config|
-          config.client_middleware do |chain|
-            unless chain.exists?(Sidekiq::TransactionGuard::Middleware)
-              chain.add Sidekiq::TransactionGuard::Middleware
-            end
-          end
+          add_client_middleware(config)
+        end
+
+        Sidekiq.configure_server do |config|
+          add_client_middleware(config)
         end
       end
 
@@ -46,16 +50,48 @@ module Sidekiq
       # @return [Symbol] the mode that was set
       def mode=(symbol)
         if VALID_MODES.include?(symbol)
-          @mode = symbol
+          @lock.synchronize { @mode = symbol }
         else
           raise ArgumentError.new("mode must be one of #{VALID_MODES.inspect}")
         end
       end
 
-      # Return the current mode.
+      # Return the mode in effect for the current thread. This is the thread local
+      # mode if one has been set, otherwise the global mode.
       #
       # @return [Symbol]
-      attr_reader :mode
+      def mode
+        thread_local_mode || default_mode
+      end
+
+      # Return the globally configured mode, ignoring any thread local override.
+      #
+      # @return [Symbol]
+      def default_mode
+        @lock.synchronize { @mode }
+      end
+
+      # Set a mode override for the current thread only. This is used by `disable`
+      # and the test integrations so that changing the mode in one thread cannot
+      # affect jobs being enqueued concurrently in other threads. Set to `nil` to
+      # remove the override and fall back to the global mode.
+      #
+      # @param symbol [Symbol, nil] one of `:warn`, `:stderr`, `:error`, `:disabled`, or nil
+      # @return [Symbol, nil] the mode that was set
+      def thread_local_mode=(symbol)
+        if symbol.nil? || VALID_MODES.include?(symbol)
+          Thread.current[:sidekiq_transaction_guard_mode] = symbol
+        else
+          raise ArgumentError.new("mode must be one of #{VALID_MODES.inspect}")
+        end
+      end
+
+      # Return the mode override for the current thread, or nil if none is set.
+      #
+      # @return [Symbol, nil]
+      def thread_local_mode
+        Thread.current[:sidekiq_transaction_guard_mode]
+      end
 
       # Define the global notify block. This block will be called with a Sidekiq
       # job hash for all jobs enqueued inside transactions if the mode is `:warn`
@@ -64,14 +100,14 @@ module Sidekiq
       # @yield [Hash] the Sidekiq job hash
       # @return [void]
       def notify(&block)
-        @notify = block
+        @lock.synchronize { @notify = block }
       end
 
       # Return the block set as the notify handler with a call to `notify`.
       #
       # @return [Proc, nil] the notify block, or nil if none has been set
       def notify_block
-        @notify
+        @lock.synchronize { @notify }
       end
 
       # Add a class that maintains its own connection pool to the connections
@@ -97,8 +133,7 @@ module Sidekiq
       # @return [Boolean]
       def in_transaction?
         connection_classes.any? do |connection_class|
-          connection_pool = connection_class.connection_pool
-          connection = connection_class.connection if connection_pool.active_connection?
+          connection = active_connection(connection_class)
           if connection
             connection.open_transactions > allowed_transaction_level(connection_class)
           else
@@ -110,15 +145,18 @@ module Sidekiq
       # Disable the transaction guard within the provided block. This is useful in test environments when you want to
       # setup data for your tests without worrying about transaction levels.
       #
+      # The guard is only disabled for the current thread so that jobs enqueued
+      # concurrently in other threads are still checked.
+      #
       # @yield the block to execute with the transaction guard disabled
       # @return [Object] the return value of the block
       def disable
-        save_mode = mode
+        save_mode = thread_local_mode
         begin
-          self.mode = :disabled
+          self.thread_local_mode = :disabled
           yield
         ensure
-          self.mode = save_mode
+          self.thread_local_mode = save_mode
         end
       end
 
@@ -130,15 +168,42 @@ module Sidekiq
       # @yield the test block to execute
       # @return [Object] the return value of the block
       def testing
-        var = :sidekiq_rails_transaction_guard
-        save_val = Thread.current[var]
+        saved_state = begin_testing
         begin
-          Thread.current[var] = (save_val ? save_val.dup : {})
           set_allowed_transaction_level(:all)
           yield
         ensure
-          Thread.current[var] = save_val
+          end_testing(saved_state)
         end
+      end
+
+      # Start a testing context on the current thread without a block. This is used
+      # by test framework integrations (like the Minitest helper) that cannot wrap
+      # the entire test in a single block. Use `testing` instead whenever a block
+      # can be used. The returned state must be passed to `end_testing` when the
+      # test finishes.
+      #
+      # This method only allocates the transaction tracking state; it does not
+      # capture a transaction level baseline. The caller is responsible for calling
+      # `set_allowed_transaction_level` once any setup that opens transactions
+      # (e.g. transactional fixtures) has run.
+      #
+      # @api private
+      # @return [Object] opaque saved state to pass to `end_testing`
+      def begin_testing
+        var = :sidekiq_rails_transaction_guard
+        saved_state = Thread.current[var]
+        Thread.current[var] = (saved_state ? saved_state.dup : {})
+        saved_state
+      end
+
+      # End a testing context started with `begin_testing`.
+      #
+      # @api private
+      # @param saved_state [Object] the state returned by `begin_testing`
+      # @return [void]
+      def end_testing(saved_state)
+        Thread.current[:sidekiq_rails_transaction_guard] = saved_state
       end
 
       # This method needs to be called to set the allowed transaction level for a connection
@@ -161,7 +226,11 @@ module Sidekiq
 
         connection_classes = self.connection_classes if connection_classes == :all
         Array(connection_classes).each do |connection_class|
-          class_count = connection_class.connection.open_transactions + base_transaction_level
+          class_count = begin
+            lease_connection(connection_class).open_transactions + base_transaction_level
+          rescue ActiveRecord::ConnectionNotEstablished
+            base_transaction_level
+          end
           connection_counts[connection_class.name] = class_count
         end
       end
@@ -172,6 +241,35 @@ module Sidekiq
         connection_counts = Thread.current[:sidekiq_rails_transaction_guard]
         (connection_counts && connection_counts[connection_class.name]) || 0
       end
+
+      def add_client_middleware(config)
+        config.client_middleware do |chain|
+          unless chain.exists?(Sidekiq::TransactionGuard::Middleware)
+            chain.add Sidekiq::TransactionGuard::Middleware
+          end
+        end
+      end
+
+      # Return the connection for the class only if the current thread already has
+      # one checked out. Checking out a new connection here would be pointless (a
+      # freshly checked out connection can't be inside an application transaction)
+      # and would tie up connections from pools the code isn't even using.
+      def active_connection(connection_class)
+        connection = nil
+        pool = connection_class.connection_pool
+        connection = lease_connection(connection_class) if pool.active_connection?
+        connection
+      rescue ActiveRecord::ConnectionNotEstablished
+        nil
+      end
+
+      def lease_connection(connection_class)
+        if connection_class.respond_to?(:lease_connection)
+          connection_class.lease_connection
+        else
+          connection_class.connection
+        end
+      end
     end
   end
 end
@@ -181,6 +279,7 @@ if defined?(Rails::Railtie)
 end
 
 # Configure the default transaction guard mode for known testing environments.
+# In a Rails application the Railtie initializer will override this default.
 if ENV["RAILS_ENV"] == "test" || ENV["RACK_ENV"] == "test"
   Sidekiq::TransactionGuard.mode = :stderr
 end

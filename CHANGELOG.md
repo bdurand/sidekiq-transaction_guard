@@ -4,6 +4,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.1.2
+
+### Fixed
+
+- `Sidekiq::TransactionGuard.init` now registers the client middleware in the Sidekiq server process as well. Previously jobs enqueued from within other jobs bypassed the transaction guard entirely because `Sidekiq.configure_client` is a no-op in server processes.
+- Fixed the Minitest helper so the transaction tracking set up by `Sidekiq::TransactionGuard.testing` remains active for the duration of the test. Previously the testing context was torn down when `setup` returned, so the transaction level snapshot was discarded before the test body ran and tests using transactional fixtures would raise false positive errors on every enqueue. The helper now uses Minitest's `before_setup`/`after_teardown` lifecycle hooks and takes the snapshot after all other setup hooks (including transactional fixtures) have run.
+- The Minitest helper no longer permanently changes the global mode when it is included and no longer defines `setup`/`teardown` methods that could be silently overridden by test classes defining their own.
+- `Sidekiq::TransactionGuard.disable` and the RSpec/Minitest test integrations now use a thread local mode override instead of mutating the global mode. This fixes race conditions where disabling the guard in one thread would disable it for all threads, and where concurrent save/restore of the global mode could leave it in the wrong state.
+- The RSpec integration now registers its per-example hooks at the example group level so the transaction level snapshot is taken after rspec-rails opens the transactional fixture transaction instead of before it.
+- Worker-level `transaction_guard` sidekiq options are now honored when the value is a string as well as a symbol.
+- Connection errors from registered connection classes without an established connection no longer raise from `in_transaction?`.
+- Use `lease_connection` instead of the deprecated `connection` method on ActiveRecord 7.2+.
+
+### Added
+
+- `Sidekiq::TransactionGuard.thread_local_mode` and `thread_local_mode=` to override the mode for the current thread only.
+- `Sidekiq::TransactionGuard.default_mode` to read the globally configured mode, ignoring any thread local override.
+
 ## 1.1.1
 
 ### Changed

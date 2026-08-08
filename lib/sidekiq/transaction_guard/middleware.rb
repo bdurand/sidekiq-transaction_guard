@@ -24,7 +24,9 @@ module Sidekiq
       private
 
       def worker_mode(job)
-        read_sidekiq_option(job, :transaction_guard) || Sidekiq::TransactionGuard.mode
+        mode = read_sidekiq_option(job, :transaction_guard)
+        mode = mode.to_sym if mode.is_a?(String)
+        mode || Sidekiq::TransactionGuard.mode
       end
 
       def in_transaction?
@@ -47,7 +49,6 @@ module Sidekiq
       end
 
       def read_sidekiq_option(job, option_name)
-        # options = worker_class.sidekiq_options_hash
         job[option_name.to_s]
       end
 
