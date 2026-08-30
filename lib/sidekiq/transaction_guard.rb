@@ -135,7 +135,7 @@ module Sidekiq
         connection_classes.any? do |connection_class|
           connection = active_connection(connection_class)
           if connection
-            connection.open_transactions > allowed_transaction_level(connection_class)
+            connection.open_transactions > allowed_transaction_level(connection_class, connection)
           else
             false
           end
@@ -237,9 +237,31 @@ module Sidekiq
 
       private
 
-      def allowed_transaction_level(connection_class)
+      def allowed_transaction_level(connection_class, connection = nil)
         connection_counts = Thread.current[:sidekiq_rails_transaction_guard]
-        (connection_counts && connection_counts[connection_class.name]) || 0
+        thread_level = (connection_counts && connection_counts[connection_class.name]) || 0
+        pinned_level = (connection ? pinned_transaction_count(connection) : 0)
+        (thread_level > pinned_level) ? thread_level : pinned_level
+      end
+
+      # Return the number of transactions on the connection that were opened by the
+      # connection pool pinning machinery (Rails 7.2+). Transactional tests pin a
+      # connection and wrap it in a non-joinable transaction that the pool then
+      # shares with every thread. Those wrapper transactions are test scaffolding,
+      # not application transactions, so they never count against the guard. This
+      # is derived from the pool state so that threads without a thread local
+      # baseline (e.g. web server threads in system tests) get the correct level.
+      def pinned_transaction_count(connection)
+        pool = connection.pool
+        return 0 unless pool.respond_to?(:pin_connection!)
+        return 0 unless pool.instance_variable_defined?(:@pinned_connection)
+        return 0 unless connection.equal?(pool.instance_variable_get(:@pinned_connection))
+
+        if pool.instance_variable_defined?(:@pinned_connections_depth)
+          pool.instance_variable_get(:@pinned_connections_depth).to_i
+        else
+          1
+        end
       end
 
       def add_client_middleware(config)
