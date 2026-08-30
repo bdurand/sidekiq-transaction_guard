@@ -128,11 +128,8 @@ RSpec.describe Sidekiq::TransactionGuard do
       # in a system test.
       def in_transaction_from_new_thread?(model_class)
         Thread.new do
-          model_class.lease_connection
-          begin
+          model_class.connection_pool.with_connection do
             Sidekiq::TransactionGuard.in_transaction?
-          ensure
-            model_class.release_connection
           end
         end.value
       end
@@ -179,6 +176,18 @@ RSpec.describe Sidekiq::TransactionGuard do
       it "should count application transactions opened with joinable: false" do
         with_pinned_connection(TestModel.connection_pool) do
           TestModel.transaction(joinable: false, requires_new: true) do
+            expect(Sidekiq::TransactionGuard.in_transaction?).to eq true
+            expect(in_transaction_from_new_thread?(TestModel)).to eq true
+          end
+        end
+      end
+
+      it "should count application transactions when the wrapper was closed outside the pool" do
+        with_pinned_connection(TestModel.connection_pool) do
+          # The pool still counts the pin, but the wrapper transaction is gone.
+          TestModel.lease_connection.rollback_transaction
+
+          TestModel.transaction do
             expect(Sidekiq::TransactionGuard.in_transaction?).to eq true
             expect(in_transaction_from_new_thread?(TestModel)).to eq true
           end
