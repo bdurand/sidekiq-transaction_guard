@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.1.3
+
+### Fixed
+
+- Transactions opened by the connection pool pinning machinery used by transactional tests in Rails 7.2+ are no longer counted as application transactions. Rails 7.2 pins a single connection wrapped in a non-joinable transaction and shares it with every thread, but the transaction level baseline captured by the test integrations is stored per thread. Threads other than the test runner thread (e.g. Capybara server threads, ActionCable workers, or inline Sidekiq jobs in system tests) had no baseline, so every job they enqueued was falsely flagged as inside a transaction. The allowed transaction level is now derived from the pool's pinned connection state as well, which is visible from all threads. Transactions opened by application code, including non-joinable ones, are still counted. The pinned connection state is only consulted once a test integration has started a testing context, so pinning a connection outside of tests does not bypass the guard.
+
 ## 1.1.2
 
 ### Fixed

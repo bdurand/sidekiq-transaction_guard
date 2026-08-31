@@ -15,6 +15,7 @@ module Sidekiq
     @connection_classes = Set.new
     @notify = nil
     @mode = :warn
+    @testing_context = false
 
     class << self
       VALID_MODES = [:warn, :stderr, :error, :disabled].freeze
@@ -134,11 +135,10 @@ module Sidekiq
       def in_transaction?
         connection_classes.any? do |connection_class|
           connection = active_connection(connection_class)
-          if connection
-            connection.open_transactions > allowed_transaction_level(connection_class)
-          else
-            false
-          end
+          next false unless connection
+
+          connection.open_transactions > allowed_transaction_level(connection_class) &&
+            application_transaction_open?(connection)
         end
       end
 
@@ -194,6 +194,7 @@ module Sidekiq
         var = :sidekiq_rails_transaction_guard
         saved_state = Thread.current[var]
         Thread.current[var] = (saved_state ? saved_state.dup : {})
+        @testing_context = true
         saved_state
       end
 
@@ -240,6 +241,42 @@ module Sidekiq
       def allowed_transaction_level(connection_class)
         connection_counts = Thread.current[:sidekiq_rails_transaction_guard]
         (connection_counts && connection_counts[connection_class.name]) || 0
+      end
+
+      # Return true if the connection has any open transaction that was not opened by
+      # the connection pool pinning machinery (Rails 7.2+). Transactional tests pin a
+      # connection and wrap it in a non-joinable transaction that the pool then shares
+      # with every thread. Those wrapper transactions are test scaffolding, not
+      # application transactions, so they never count against the guard. The pin state
+      # is read from the pool rather than from a thread local so that threads without a
+      # baseline (e.g. web server threads in system tests) get the correct level.
+      def application_transaction_open?(connection)
+        return true unless @testing_context
+        return true unless connection.respond_to?(:pinned)
+
+        # The pool changes the pin state under the connection lock. Hold it so the
+        # transaction count and the pin state cannot be read from different states.
+        connection.lock.synchronize do
+          next true unless connection.pinned
+
+          open_transactions = connection.open_transactions
+          open_transactions > pinned_transaction_count(connection, open_transactions)
+        end
+      end
+
+      # Return the number of open transactions on a pinned connection that belong to
+      # the pinning machinery. The pool counts pins rather than transactions, so the
+      # count is only trusted as far as the connection state supports it: it can never
+      # exceed the open transactions, and if it accounts for all of them then the
+      # innermost one must be non-joinable, since the wrappers always are. Anything
+      # else means the wrappers were closed outside of the pinning machinery and
+      # nothing should be discounted.
+      def pinned_transaction_count(connection, open_transactions)
+        depth = connection.pool.instance_variable_get(:@pinned_connections_depth).to_i
+        depth = open_transactions if depth > open_transactions
+        return 0 if depth == open_transactions && connection.current_transaction.joinable?
+
+        depth
       end
 
       def add_client_middleware(config)

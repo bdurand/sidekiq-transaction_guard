@@ -126,6 +126,12 @@ RSpec.describe Sidekiq::TransactionGuard::Middleware do
     end
 
     it "should log to STDERR jobs being scheduled inside of a transaction if there is no logger" do
+      # Enqueue a job first so that Sidekiq's lazily initialized redis client is
+      # created while the logger is still available; older versions of Sidekiq
+      # log to the logger when the client is set up.
+      TestWorker.perform_async
+      TestWorker.clear
+
       Sidekiq::TransactionGuard.thread_local_mode = :warn
       allow(Sidekiq).to receive(:logger).and_return(nil)
       TestModel.transaction do

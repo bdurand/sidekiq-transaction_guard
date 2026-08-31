@@ -112,6 +112,88 @@ RSpec.describe Sidekiq::TransactionGuard do
       end
       expect(Sidekiq::TransactionGuard.in_transaction?).to eq false
     end
+
+    describe "with a pinned connection" do
+      def with_pinned_connection(pool)
+        pool.pin_connection!(false)
+        begin
+          yield
+        ensure
+          pool.unpin_connection!
+        end
+      end
+
+      # Check the transaction state from a thread that shares the pinned
+      # connection but has no thread local baseline, like a web server thread
+      # in a system test.
+      def in_transaction_from_new_thread?(model_class)
+        Thread.new do
+          model_class.connection_pool.with_connection do
+            Sidekiq::TransactionGuard.in_transaction?
+          end
+        end.value
+      end
+
+      before do
+        unless ActiveRecord::Base.connection_pool.respond_to?(:pin_connection!)
+          skip "connection pinning requires ActiveRecord 7.2+"
+        end
+      end
+
+      it "should not count the pinned wrapper transaction on the test thread" do
+        with_pinned_connection(TestModel.connection_pool) do
+          expect(Sidekiq::TransactionGuard.in_transaction?).to eq false
+        end
+        expect(Sidekiq::TransactionGuard.in_transaction?).to eq false
+      end
+
+      it "should not count the pinned wrapper transaction on threads without a baseline" do
+        with_pinned_connection(TestModel.connection_pool) do
+          expect(in_transaction_from_new_thread?(TestModel)).to eq false
+        end
+      end
+
+      it "should not count nested pinned wrapper transactions" do
+        pool = TestModel.connection_pool
+        with_pinned_connection(pool) do
+          with_pinned_connection(pool) do
+            expect(Sidekiq::TransactionGuard.in_transaction?).to eq false
+            expect(in_transaction_from_new_thread?(TestModel)).to eq false
+          end
+        end
+      end
+
+      it "should count application transactions opened under the pinned wrapper from any thread" do
+        with_pinned_connection(TestModel.connection_pool) do
+          TestModel.transaction do
+            expect(Sidekiq::TransactionGuard.in_transaction?).to eq true
+            expect(in_transaction_from_new_thread?(TestModel)).to eq true
+          end
+          expect(Sidekiq::TransactionGuard.in_transaction?).to eq false
+        end
+      end
+
+      it "should count application transactions opened with joinable: false" do
+        with_pinned_connection(TestModel.connection_pool) do
+          TestModel.transaction(joinable: false, requires_new: true) do
+            expect(Sidekiq::TransactionGuard.in_transaction?).to eq true
+            expect(in_transaction_from_new_thread?(TestModel)).to eq true
+          end
+        end
+      end
+
+      it "should count application transactions when the wrapper was closed outside the pool" do
+        with_pinned_connection(TestModel.connection_pool) do
+          # The pool still counts the pin, but the wrapper transaction is gone.
+          TestModel.lease_connection.rollback_transaction
+
+          TestModel.transaction do
+            expect(Sidekiq::TransactionGuard.in_transaction?).to eq true
+            expect(in_transaction_from_new_thread?(TestModel)).to eq true
+          end
+        end
+      end
+    end
   end
 
   describe ".disable" do
